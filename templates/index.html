@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skicka SMS - Butiken</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/static/logo-light.png">
+    <style>
+        /* Light Theme (Default) */
+        :root {
+            --primary-color: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #111827;
+            --text-muted: #6B7280;
+            --border-color: #E5E7EB;
+            --success-color: #10B981;
+            --error-color: #EF4444;
+            --radius: 12px;
+            --input-bg: #F9FAFB;
+        }
+
+        /* Dark Theme */
+        :root.dark-mode {
+            --bg-color: #111827;
+            --card-bg: #1F2937;
+            --text-main: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --border-color: #374151;
+            --input-bg: #374151;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            line-height: 1.5; 
+            padding: 20px; 
+            transition: background-color 0.5s ease, color 0.5s ease;
+            overflow-x: hidden;
+        }
+        
+        /* Test Mode Border */
+        .test-mode-border {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            border: 8px solid var(--error-color);
+            pointer-events: none; z-index: 9998;
+            opacity: 0; transition: opacity 0.3s;
+            box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.5);
+        }
+        body.test-mode-active .test-mode-border { opacity: 1; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; max-width: 1000px; margin: 0 auto 20px; }
+        .header h1 { font-size: 1.5rem; color: var(--text-main); }
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        #appLogo { height: 100px; width: auto; max-width: 100%; object-fit: contain; }
+        
+        .btn-icon { background: var(--card-bg); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; cursor: pointer; color: var(--text-main); transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .btn-icon:hover { background: var(--input-bg); transform: scale(1.05); }
+
+        .btn-settings { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: all 0.3s; }
+        .btn-settings:hover { background: var(--input-bg); }
+
+        .container { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 24px; position: relative; z-index: 1; }
+        @media (min-width: 768px) { .container { grid-template-columns: 1fr 1fr; } }
+
+        .card { background: var(--card-bg); border-radius: var(--radius); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 24px; transition: background-color 0.5s ease; }
+        h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 6px; }
+        input[type="text"], input[type="tel"], input[type="password"], input[type="number"], select, textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; transition: all 0.2s; background-color: var(--input-bg); color: var(--text-main);
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-color); background-color: var(--card-bg); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        textarea { resize: vertical; min-height: 100px; }
+
+        .char-counter { font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 4px; }
+        .char-counter.warning { color: #F59E0B; }
+        .char-counter.danger { color: var(--error-color); }
+
+        /* BUTTONS (Consistent Styling) */
+        button { font-family: 'Inter', sans-serif; }
+        
+        button.btn-primary { width: 100%; background-color: var(--primary-color); color: white; border: none; padding: 12px; font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s; }
+        button.btn-primary:hover { background-color: var(--primary-hover); }
+        button.btn-primary:disabled { background-color: var(--text-muted); cursor: not-allowed; }
+        
+        button.btn-danger { background-color: var(--error-color); color: white; border: none; padding: 12px 16px; font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer; transition: background 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        button.btn-danger:hover { background-color: #DC2626; }
+        
+        button.btn-outline { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 16px; font-size: 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        button.btn-outline:hover { background-color: var(--input-bg); }
+
+        .search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+        .search-bar .btn-danger { padding: 10px 16px; } 
+        
+        .table-container { overflow-x: auto; max-height: 500px; border-radius: 8px; border: 1px solid var(--border-color); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; color: var(--text-main); }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; transition: background-color 0.5s ease; }
+        th { background-color: var(--input-bg); font-weight: 600; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border-color); }
+
+        /* On mobile, allow table cells to wrap so the page doesn't overflow */
+        @media (max-width: 600px) {
+            .table-container { max-height: 400px; }
+            th, td { white-space: normal; word-break: break-word; padding: 8px 6px; font-size: 0.8rem; }
+        }
+        .row-clickable { cursor: pointer; transition: opacity 0.2s, background 0.2s; }
+        .row-clickable:hover { background-color: var(--input-bg); }
+        
+        .row-picked-up { opacity: 0.5; text-decoration: line-through; }
+
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .status-sent { background-color: rgba(16, 185, 129, 0.2); color: #059669; }
+        .status-failed { background-color: rgba(239, 68, 68, 0.2); color: #DC2626; }
+        .status-dryrun { background-color: rgba(245, 158, 11, 0.2); color: #D97706; }
+        .dark-mode .status-sent { color: #34D399; }
+        .dark-mode .status-failed { color: #F87171; }
+        .dark-mode .status-dryrun { color: #FBBF24; }
+
+        /* Lock Screen Overlay */
+        .lock-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s; }
+        .lock-overlay.hidden { opacity: 0; pointer-events: none; }
+        .pin-box { background: var(--card-bg); padding: 32px; border-radius: var(--radius); box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
+        .pin-input { font-size: 2rem; letter-spacing: 0.5em; text-align: center; margin-bottom: 16px; font-family: monospace; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal { background: var(--card-bg); color: var(--text-main); border-radius: var(--radius); padding: 24px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        
+        /* Tabs */
+        .tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+        .tab { padding: 10px 16px; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; transition: all 0.2s; }
+        .tab.active { border-bottom-color: var(--primary-color); color: var(--primary-color); }
+        .tab:hover:not(.active) { color: var(--primary-hover); }
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Toasts */
+        .toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
+        .toast { padding: 16px 24px; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; gap: 10px; align-items: center; }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background-color: var(--success-color); }
+        .toast.error { background-color: var(--error-color); }
+
+        .spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 1s infinite linear; display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Custom Checkbox */
+        .pickup-cb { width: 20px; height: 20px; cursor: pointer; accent-color: var(--success-color); }
+
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            
+            /* Header & Logo */
+            .header { flex-direction: column; align-items: center; text-align: center; gap: 10px; margin-bottom: 14px; }
+            #appLogo { height: 70px; max-width: 90%; }
+            #balanceDisplay { justify-content: center; margin-right: 0; }
+
+            /* Header-actions: wrap buttons on small screens */
+            .header-actions { width: 100%; justify-content: center; gap: 8px; }
+            .btn-settings { flex: 1; justify-content: center; min-width: 80px; }
+            .btn-icon { flex-shrink: 0; }
+
+            /* Modals: full-ish screen on mobile */
+            .modal-overlay { align-items: flex-end; }
+            .modal { width: 100%; max-width: 100%; border-bottom-left-radius: 0; border-bottom-right-radius: 0; max-height: 92vh; padding: 20px 16px; }
+
+            /* Toasts */
+            .toast-container { left: 10px; right: 10px; bottom: 10px; align-items: stretch; }
+            .toast { width: 100%; justify-content: center; }
+
+            /* Other */
+            .search-bar { flex-direction: column; align-items: stretch; }
+            .search-bar input { width: 100%; }
+            .tabs { flex-wrap: wrap; }
+            .tab { flex: 1; text-align: center; font-size: 0.85rem; padding: 10px 4px; }
+            .card { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="test-mode-border"></div>
+
+    <!-- Lock Screen -->
+    <div class="lock-overlay" id="lockOverlay">
+        <div class="pin-box">
+            <h2 id="lockTitle" style="border:none; margin-bottom: 10px;">Låser upp...</h2>
+            <p id="lockSubtitle" style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;"></p>
+            <form id="pinForm">
+                <input type="password" id="pinInput" class="pin-input" inputmode="numeric" required maxlength="10">
+                <button type="submit" class="btn-primary" id="pinBtn">Lås upp</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Generic Confirm Modal (Custom warning window) -->
+    <div class="modal-overlay" id="confirmModalOverlay" style="z-index: 100;">
+        <div class="modal" style="max-width: 400px; text-align: center;">
+            <h2 id="confirmModalTitle" style="border: none; margin-bottom: 10px;">Varning</h2>
+            <p id="confirmModalText" style="margin-bottom: 24px; color: var(--text-muted); font-size: 1rem;"></p>
+            <div style="display: flex; gap: 10px;">
+                <button id="confirmModalYesBtn" class="btn-danger" style="flex: 1;">Ja</button>
+                <button id="confirmModalNoBtn" class="btn-outline" style="flex: 1;" onclick="closeConfirmModal()">Ångra</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="header">
+        <img id="appLogo" src="/static/logo-light.png" style="height: 100px; width: auto;" alt="SendSms">
+        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+            <span id="serverIpDisplay" style="font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.02em;"></span>
+            <div class="header-actions" style="align-items: center;">
+                <div id="balanceDisplay" style="display: flex; align-items: center; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); margin-right: 10px;" title="Ditt saldo hos 46elks">
+                    Saldo: Laddar...
+                </div>
+                <button class="btn-icon" id="darkModeToggle" title="Växla ljust/mörkt läge">
+                    <svg id="themeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.5s ease;">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+                <button class="btn-settings" onclick="showAboutModal(event)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                    Om
+                </button>
+                <button class="btn-settings" onclick="openSettingsModal()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    Inställningar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Vänster kolumn: Formulär -->
+        <div class="card">
+            <h2>Skicka SMS</h2>
+            <form id="smsForm">
+                <div class="form-group">
+                    <label>Telefonnummer *</label>
+                    <input type="tel" id="phone" required placeholder="t.ex. 070 123 45 67">
+                </div>
+                <div class="form-group">
+                    <label>Vara / Artikel</label>
+                    <input type="text" id="article" placeholder="t.ex. Cykel">
+                </div>
+                <div class="form-group">
+                    <label>Summa att betala (kr)</label>
+                    <input type="text" id="amount" placeholder="t.ex. 1 500" inputmode="numeric">
+                </div>
+                <div class="form-group">
+                    <label>Välj mall</label>
+                    <select id="templateDropdown">
+                        <option value="">-- Laddar mallar... --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Meddelande *</label>
+                    <textarea id="message" required></textarea>
+                    <div id="charCount" class="char-counter">0 / 160 tecken (1 SMS)</div>
+                </div>
+                <button type="submit" class="btn-primary" id="submitBtn">
+                    <div class="spinner" id="spinner"></div>
+                    <span id="btnText">Skicka SMS</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Höger kolumn: Historik -->
+        <div class="card">
+            <h2>Historik</h2>
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Sök i realtid...">
+                <button type="button" class="btn-danger" id="clearSearchBtn">Rensa</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th title="Markera som uthämtad">✔</th>
+                            <th>Tid</th>
+                            <th>Mottagare</th>
+                            <th>Vara</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Message View Modal -->
+    <div class="modal-overlay" id="msgModalOverlay">
+        <div class="modal">
+            <h2>Skickat meddelande</h2>
+            <div style="margin-top: 16px;">
+                <p style="margin-bottom: 8px;"><strong>Mottagare:</strong> <span id="msgModalPhone"></span></p>
+                <p><strong>Tid:</strong> <span id="msgModalTime"></span></p>
+            </div>
+            <div style="background: var(--input-bg); padding: 16px; border-radius: 8px; margin-top: 16px; white-space: pre-wrap; font-size: 1rem; border: 1px solid var(--border-color);" id="msgModalText"></div>
+            <button class="btn-outline" style="width: 100%; margin-top: 24px;" onclick="closeMsgModal()">Stäng</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModalOverlay">
+        <div class="modal">
+            <h2>Inställningar</h2>
+            
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('tab-elks')">App & API</div>
+                <div class="tab" onclick="switchTab('tab-templates')">SMS Mallar</div>
+                <div class="tab" onclick="switchTab('tab-security')">Säkerhet</div>
+            </div>
+
+            <!-- Tab 1: Settings -->
+            <div id="tab-elks" class="tab-content active">
+                <div class="form-group" style="padding: 12px; background: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
+                        <input type="checkbox" id="testModeCheck" style="width: 20px; height: 20px;">
+                        <div>
+                            <span style="font-weight: 600; display: block;">Aktivera Övningsläge</span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">Skickar inga riktiga SMS. (Röd ram visas).</span>
+                        </div>
+                    </label>
+                </div>
+                
+                <h3 style="font-size: 1rem; margin-bottom: 12px;">App & Databas</h3>
+                <div class="form-group">
+                    <label>Dagar att spara historik (GDPR)</label>
+                    <input type="number" id="settingsPurgeDays" min="1" max="365" placeholder="T.ex. 90">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Äldre SMS raderas automatiskt.</div>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 20px;">
+                    <h3 style="font-size: 1rem;">46elks API Uppgifter</h3>
+                    <a href="https://46elks.se/" target="_blank" rel="noopener" style="font-size: 0.85rem; color: var(--primary-color); text-decoration: none; font-weight: 500;">&#x1F517; Länk</a>
+                </div>
+                <div class="form-group">
+                    <label>API Användarnamn</label>
+                    <input type="text" id="elksUsername">
+                </div>
+                <div class="form-group">
+                    <label>API Lösenord</label>
+                    <input type="password" id="elksPassword">
+                </div>
+                <div class="form-group">
+                    <label>Avsändare (t.ex. Butiken)</label>
+                    <input type="text" id="elksSender">
+                </div>
+                <button class="btn-primary" onclick="saveSettings()">Spara API & App</button>
+            </div>
+
+            <!-- Tab 2: Templates -->
+            <div id="tab-templates" class="tab-content">
+                <div id="templatesList" style="margin-bottom: 20px;"></div>
+                <div style="border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <h3 style="margin-bottom: 12px; font-size: 1rem;">Ny / Redigera mall</h3>
+                    <input type="hidden" id="editTemplateId">
+                    <div class="form-group">
+                        <input type="text" id="editTemplateName" placeholder="Mallens namn">
+                    </div>
+                    <div class="form-group">
+                        <textarea id="editTemplateText" placeholder="Meddelandetext... (Använd {vara} och {summa})"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn-primary" style="flex: 1; min-width: 150px;" onclick="saveTemplate()">Spara Mall</button>
+                        <button class="btn-outline" style="flex: 1; min-width: 100px;" onclick="resetTemplateForm()">Ångra</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 3: Security -->
+            <div id="tab-security" class="tab-content">
+                <div class="form-group">
+                    <label>Nuvarande PIN-kod (Krävs för byten)</label>
+                    <input type="password" id="oldPin" inputmode="numeric">
+                </div>
+                <div class="form-group">
+                    <label>Ny PIN-kod</label>
+                    <input type="password" id="newPin" inputmode="numeric">
+                </div>
+                <button class="btn-primary" onclick="changePin()">Byt PIN-kod</button>
+            </div>
+            
+            <button class="btn-outline" style="width: 100%; margin-top: 24px; border-color: var(--border-color); background: var(--input-bg);" onclick="closeSettingsModal()">Stäng inställningar</button>
+        </div>
+    </div>
+
+    <script>
+        // --- State ---
+        let templatesData = [];
+        let historyData = [];
+        let settingsDirty = false;
+        
+        // --- Custom Confirm Modal Logic ---
+        let confirmActionCallback = null;
+
+        function showConfirmModal(title, text, yesText, yesClass, callback) {
+            document.getElementById('confirmModalTitle').textContent = title;
+            document.getElementById('confirmModalText').textContent = text;
+            
+            const yesBtn = document.getElementById('confirmModalYesBtn');
+            yesBtn.textContent = yesText;
+            yesBtn.className = yesClass; // to match styles
+            
+            confirmActionCallback = callback;
+            document.getElementById('confirmModalOverlay').classList.add('active');
+        }
+
+        function showInfoModal(title, text, event) {
+            if(event) event.stopPropagation();
+            document.getElementById('confirmModalTitle').textContent = title;
+            const textEl = document.getElementById('confirmModalText');
+            textEl.textContent = text;
+            textEl.style.whiteSpace = 'pre-wrap';
+            
+            const yesBtn = document.getElementById('confirmModalYesBtn');
+            yesBtn.textContent = "Stäng";
+            yesBtn.className = "btn-outline"; 
+            
+            document.getElementById('confirmModalNoBtn').style.display = 'none';
+            
+            confirmActionCallback = null;
+            document.getElementById('confirmModalOverlay').classList.add('active');
+        }
+
+        function showAboutModal(event) {
+            const aboutText = `Utvecklad av: Dennis West
+Kontakt: +46 736562525
+
+Applikationen är för närvarande fri att använda. 
+
+ANSVARSFRISKRIVNING:
+Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier. Fel eller driftstopp kan förekomma. Utvecklaren tar inget ansvar för eventuella direkta eller indirekta skador, kostnader, förlorad data eller misslyckade SMS-utskick som kan uppstå vid användning av appen. All användning sker på egen risk.
+
+© 2026 Dennis West`;
+            showInfoModal('Om SendSms', aboutText, event);
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModalOverlay').classList.remove('active');
+            document.getElementById('confirmModalNoBtn').style.display = 'block'; // Reset display
+            confirmActionCallback = null;
+        }
+
+        document.getElementById('confirmModalYesBtn').addEventListener('click', () => {
+            if (confirmActionCallback) confirmActionCallback();
+            closeConfirmModal();
+        });
+
+        // --- Event Listeners for Closing Modals ---
+        document.getElementById('settingsModalOverlay').addEventListener('input', () => { settingsDirty = true; });
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    if (overlay.id === 'settingsModalOverlay') closeSettingsModal();
+                    else if (overlay.id === 'confirmModalOverlay') closeConfirmModal();
+                    else overlay.classList.remove('active');
+                }
+            });
+        });
+
+        // --- Theme / Dark Mode ---
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const appLogo = document.getElementById('appLogo');
+        
+        function applyTheme(isDark) {
+            if(isDark) {
+                document.documentElement.classList.add('dark-mode');
+                if(appLogo) appLogo.src = '/static/logo-dark.png';
+                themeIcon.style.transform = 'rotate(180deg)';
+                themeIcon.innerHTML = '<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+                if(appLogo) appLogo.src = '/static/logo-light.png';
+                themeIcon.style.transform = 'rotate(0deg)';
+                themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+            }
+            localStorage.setItem('darkMode', isDark);
+        }
+        
+        darkModeToggle.addEventListener('click', () => {
+            const isDark = !document.documentElement.classList.contains('dark-mode');
+            applyTheme(isDark);
+        });
+        
+        if(localStorage.getItem('darkMode') === 'true') {
+            applyTheme(true);
+        }
+
+        // --- Auth System ---
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/auth/status');
+                const data = await res.json();
+                
+                const lockOverlay = document.getElementById('lockOverlay');
+                const title = document.getElementById('lockTitle');
+                const sub = document.getElementById('lockSubtitle');
+                const pinBtn = document.getElementById('pinBtn');
+                
+                if (data.locked) {
+                    lockOverlay.classList.remove('hidden');
+                    if (data.setup_needed) {
+                        title.textContent = "Välkommen!";
+                        sub.textContent = "Välj en PIN-kod för att skydda appen.";
+                        pinBtn.textContent = "Skapa PIN";
+                    } else {
+                        title.textContent = "Låst";
+                        sub.textContent = "Ange PIN-kod för att fortsätta.";
+                        pinBtn.textContent = "Lås upp";
+                    }
+                } else {
+                    lockOverlay.classList.add('hidden');
+                    initializeApp();
+                }
+            } catch (err) { console.error("Auth check failed", err); }
+        }
+
+        document.getElementById('pinForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pin = document.getElementById('pinInput').value;
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin })
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('pinInput').value = '';
+                checkAuth();
+            } else {
+                alert(data.error);
+            }
+        });
+
+        function initializeApp() {
+            loadTemplates();
+            loadHistory();
+            loadSettings();
+            fetchBalance();
+            fetchServerInfo();
+        }
+        
+        async function fetchServerInfo() {
+            try {
+                const res = await fetch('/api/server-info');
+                const data = await res.json();
+                const el = document.getElementById('serverIpDisplay');
+                if (el && data.ip && data.ip !== '127.0.0.1') {
+                    el.textContent = data.ip + ':' + data.port;
+                    el.title = 'Skriv denna adress i mobilen för att komma åt appen';
+                }
+            } catch(e) {}
+        }
+        
+        async function fetchBalance() {
+            try {
+                const res = await fetch('/api/balance');
+                const data = await res.json();
+                const balEl = document.getElementById('balanceDisplay');
+                if(data.success) {
+                    balEl.innerHTML = `Saldo: <strong style="color: var(--text-main); margin-left: 4px;">${data.balance.toFixed(2)} kr</strong>`;
+                } else {
+                    balEl.innerHTML = `<span style="color: var(--error-color);" title="${data.error}">Saldo okänt</span>`;
+                }
+            } catch(e) {
+                document.getElementById('balanceDisplay').textContent = "Kunde ej hämta saldo";
+            }
+        }
+        
+        window.onload = checkAuth;
+
+        // --- Formatting & Live Textarea Update ---
+        const articleInput = document.getElementById('article');
+        const amountInput = document.getElementById('amount');
+        const templateDropdown = document.getElementById('templateDropdown');
+        const messageTextarea = document.getElementById('message');
+        const charCount = document.getElementById('charCount');
+
+        amountInput.addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, '');
+            if (val) val = parseInt(val, 10).toLocaleString('sv-SE');
+            e.target.value = val;
+            updateMessage();
+        });
+
+        function updateMessage() {
+            const raw = templateDropdown.value;
+            if (!raw) return;
+            const vara = articleInput.value || '[Vara]';
+            const summa = amountInput.value || '[Summa]';
+            messageTextarea.value = raw.replace(/{vara}/g, vara).replace(/{summa}/g, summa);
+            updateCharCount();
+        }
+
+        function updateCharCount() {
+            const len = messageTextarea.value.length;
+            const smsCount = Math.ceil(len / 160) || 1;
+            charCount.textContent = `${len} tecken (${smsCount} SMS)`;
+            charCount.className = 'char-counter';
+            if (smsCount > 1) charCount.classList.add(smsCount >= 3 ? 'danger' : 'warning');
+        }
+
+        articleInput.addEventListener('input', updateMessage);
+        templateDropdown.addEventListener('change', updateMessage);
+        messageTextarea.addEventListener('input', updateCharCount);
+
+        // --- Send SMS ---
+        document.getElementById('smsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const spinner = document.getElementById('spinner');
+            const btnText = document.getElementById('btnText');
+            
+            btn.disabled = true; spinner.style.display = 'block'; btnText.textContent = 'Skickar...';
+            
+            try {
+                const res = await fetch('/api/send-sms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone_number: document.getElementById('phone').value,
+                        article: articleInput.value,
+                        amount: amountInput.value,
+                        message: messageTextarea.value
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('SMS loggat!');
+                    document.getElementById('phone').value = '';
+                    articleInput.value = ''; amountInput.value = '';
+                    templateDropdown.value = ''; messageTextarea.value = '';
+                    updateCharCount();
+                    loadHistory();
+                    fetchBalance();
+                } else {
+                    showToast(data.error || 'Fel uppstod', 'error');
+                }
+            } catch (err) {
+                if (err.status === 401) checkAuth();
+                else showToast('Kunde inte nå servern', 'error');
+            }
+            btn.disabled = false; spinner.style.display = 'none'; btnText.textContent = 'Skicka SMS';
+        });
+
+        // --- History ---
+        async function loadHistory(query = '') {
+            const res = await fetch('/api/history?q=' + encodeURIComponent(query));
+            if(res.status === 401) return checkAuth();
+            historyData = await res.json();
+            renderHistory();
+        }
+
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => loadHistory(e.target.value), 300);
+        });
+
+        document.getElementById('clearSearchBtn').addEventListener('click', () => {
+            document.getElementById('searchInput').value = '';
+            loadHistory();
+        });
+
+        function renderHistory() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            if (historyData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color: var(--text-muted);">Inga meddelanden.</td></tr>';
+                return;
+            }
+            historyData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                if (row.picked_up) tr.className = 'row-picked-up';
+                
+                let sClass = 'status-sent';
+                if (row.status.includes('Fail') || row.status.includes('Miss') || row.status.includes('Saknar')) sClass = 'status-failed';
+                else if (row.status.includes('Dry') || row.status.includes('Övning')) sClass = 'status-dryrun';
+
+                let displayStatus = row.status.substring(0, 15) + (row.status.length > 15 ? '...' : '');
+                let badgeHtml = '';
+                
+                if (row.status.includes('Fail') || row.status.includes('Miss') || row.status.includes('Saknar')) {
+                    sClass = 'status-failed';
+                    let errorDetails = row.status.startsWith('Failed: ') ? row.status.substring(8) : row.status;
+                    errorDetails = errorDetails.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                    badgeHtml = `<span class="status-badge ${sClass}" style="cursor: pointer;" onclick="showInfoModal('Felmeddelande från 46elks', '${errorDetails}', event)" title="Klicka för att läsa felmeddelande">${displayStatus}</span>`;
+                } else if (row.status.includes('Dry') || row.status.includes('Övning')) {
+                    sClass = 'status-dryrun';
+                    badgeHtml = `<span class="status-badge ${sClass}">${displayStatus}</span>`;
+                } else {
+                    badgeHtml = `<span class="status-badge ${sClass}">${displayStatus}</span>`;
+                }
+
+                // Count reminders (only those containing "påminn")
+                const related = historyData.filter(r => 
+                    r.id !== row.id && 
+                    r.phone_number === row.phone_number && 
+                    r.article === row.article && 
+                    r.amount === row.amount &&
+                    r.message.toLowerCase().includes('påminn')
+                );
+                
+                let reminderHtml = '';
+                if (related.length > 0) {
+                    const datesText = related.map(r => (r.timestamp ? r.timestamp.substring(0, 16) : '')).join('\\n');
+                    reminderHtml = `<span style="background: var(--primary-color); color: white; padding: 2px 6px; border-radius: 12px; font-size: 0.7rem; margin-left: 4px; cursor: pointer; display: inline-block; transform: translateY(-2px);" onclick="showInfoModal('Påminnelser skickade', '${datesText}', event)" title="Klicka för att se datum">${related.length}</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td onclick="event.stopPropagation()">
+                        <input type="checkbox" class="pickup-cb" ${row.picked_up ? 'checked' : ''} onchange="togglePickup(${row.id}, this)">
+                    </td>
+                    <td class="row-clickable" onclick="openMsgModal(${index})">${row.timestamp ? row.timestamp.substring(0,16) : '-'}</td>
+                    <td class="row-clickable" onclick="openMsgModal(${index})">${row.phone_number}</td>
+                    <td class="row-clickable" onclick="openMsgModal(${index})">${row.article || '-'}</td>
+                    <td class="row-clickable" onclick="openMsgModal(${index})">${badgeHtml}</td>
+                    <td>
+                        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; min-width: auto; border-color: transparent; display: inline-flex; align-items: center;" onclick="resendSms(${index}, event)" title="Skicka påminnelse">🔁 ${reminderHtml}</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        async function togglePickup(id, cb) {
+            const res = await fetch(`/api/history/${id}/pickup`, { method: 'POST' });
+            if(res.status === 401) return checkAuth();
+            
+            const tr = cb.closest('tr');
+            if (cb.checked) tr.classList.add('row-picked-up');
+            else tr.classList.remove('row-picked-up');
+            
+            const rowData = historyData.find(r => r.id === id);
+            if(rowData) rowData.picked_up = cb.checked ? 1 : 0;
+        }
+
+        function resendSms(index, event) {
+            event.stopPropagation();
+            const row = historyData[index];
+            
+            document.getElementById('phone').value = row.phone_number;
+            document.getElementById('article').value = row.article || '';
+            
+            let val = (row.amount || '').replace(/\D/g, '');
+            if (val) val = parseInt(val, 10).toLocaleString('sv-SE');
+            document.getElementById('amount').value = val;
+            
+            // Leta efter "Påminnelse"-mallen
+            const paminnelse = templatesData.find(t => t.name.toLowerCase().includes('påminn'));
+            if (paminnelse) {
+                document.getElementById('templateDropdown').value = paminnelse.text;
+            } else {
+                document.getElementById('templateDropdown').selectedIndex = 0;
+            }
+            
+            updateMessage();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function openMsgModal(index) {
+            const row = historyData[index];
+            document.getElementById('msgModalPhone').textContent = row.phone_number;
+            document.getElementById('msgModalTime').textContent = row.timestamp;
+            document.getElementById('msgModalText').textContent = row.message;
+            document.getElementById('msgModalOverlay').classList.add('active');
+        }
+        function closeMsgModal() { document.getElementById('msgModalOverlay').classList.remove('active'); }
+
+        // --- Templates ---
+        async function loadTemplates() {
+            const res = await fetch('/api/templates');
+            if(res.status === 401) return;
+            templatesData = await res.json();
+            templateDropdown.innerHTML = '<option value="">-- Ingen mall vald (skriv fritt) --</option>';
+            templatesData.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.text;
+                opt.textContent = t.name;
+                templateDropdown.appendChild(opt);
+            });
+            renderTemplatesList();
+        }
+
+        function renderTemplatesList() {
+            const list = document.getElementById('templatesList');
+            list.innerHTML = '';
+            templatesData.forEach(t => {
+                const div = document.createElement('div');
+                div.style = 'border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-bottom: 8px; background: var(--input-bg);';
+                div.innerHTML = `
+                    <div style="font-weight:600; font-size:0.9rem; margin-bottom: 4px;">${t.name}</div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">${t.text}</p>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-settings" style="flex:1; justify-content: center; padding: 8px; font-size: 0.875rem;" onclick="editTemplate(${t.id})">Redigera</button>
+                        <button class="btn-danger" style="flex:1; padding: 8px; font-size: 0.875rem;" onclick="deleteTemplate(${t.id})">Radera</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function editTemplate(id) {
+            const t = templatesData.find(x => x.id === id);
+            if (t) {
+                document.getElementById('editTemplateId').value = t.id;
+                document.getElementById('editTemplateName').value = t.name;
+                document.getElementById('editTemplateText').value = t.text;
+                document.getElementById('editTemplateName').scrollIntoView({ behavior: 'smooth' });
+                settingsDirty = true;
+            }
+        }
+        function resetTemplateForm() {
+            document.getElementById('editTemplateId').value = '';
+            document.getElementById('editTemplateName').value = '';
+            document.getElementById('editTemplateText').value = '';
+        }
+        async function saveTemplate() {
+            const id = document.getElementById('editTemplateId').value;
+            const name = document.getElementById('editTemplateName').value;
+            const text = document.getElementById('editTemplateText').value;
+            if(!name || !text) return showToast('Namn och text krävs', 'error');
+
+            await fetch('/api/templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id ? parseInt(id) : null, name, text })
+            });
+            showToast('Mall sparad');
+            resetTemplateForm();
+            settingsDirty = false;
+            loadTemplates();
+        }
+        
+        function deleteTemplate(id) {
+            showConfirmModal(
+                "Radera mall", 
+                "Är du säker på att du vill radera denna mall?", 
+                "Radera", 
+                "btn-danger",
+                async () => {
+                    await fetch(`/api/templates/${id}`, { method: 'DELETE' });
+                    showToast('Mall raderad');
+                    loadTemplates();
+                }
+            );
+        }
+
+        // --- Settings ---
+        function applyTestModeBorder(isTestMode) {
+            if(isTestMode) document.body.classList.add('test-mode-active');
+            else document.body.classList.remove('test-mode-active');
+        }
+
+        async function loadSettings() {
+            const res = await fetch('/api/settings');
+            if(res.status === 401) return;
+            const s = await res.json();
+            document.getElementById('elksUsername').value = s.elks_username || '';
+            document.getElementById('elksPassword').value = s.elks_password || '';
+            document.getElementById('elksSender').value = s.elks_sender || '';
+            document.getElementById('testModeCheck').checked = s.test_mode === 'true';
+            document.getElementById('settingsPurgeDays').value = s.purge_days || '90';
+            
+            applyTestModeBorder(s.test_mode === 'true');
+            settingsDirty = false; // Initial load is clean
+        }
+
+        async function saveSettings() {
+            const isTest = document.getElementById('testModeCheck').checked;
+            await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    elks_username: document.getElementById('elksUsername').value,
+                    elks_password: document.getElementById('elksPassword').value,
+                    elks_sender: document.getElementById('elksSender').value,
+                    purge_days: document.getElementById('settingsPurgeDays').value,
+                    test_mode: isTest
+                })
+            });
+            showToast('Inställningar sparade');
+            applyTestModeBorder(isTest);
+            settingsDirty = false;
+            document.getElementById('settingsModalOverlay').classList.remove('active');
+        }
+        
+        async function changePin() {
+            const old_pin = document.getElementById('oldPin').value;
+            const new_pin = document.getElementById('newPin').value;
+            
+            if(!new_pin) return showToast('Ny PIN-kod kan inte vara tom', 'error');
+            
+            const res = await fetch('/api/auth/change-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ old_pin, new_pin })
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                showToast('PIN-kod bytt!');
+                document.getElementById('oldPin').value = '';
+                document.getElementById('newPin').value = '';
+                settingsDirty = false;
+            } else {
+                showToast(data.error, 'error');
+            }
+        }
+
+        function openSettingsModal() { 
+            document.getElementById('settingsModalOverlay').classList.add('active'); 
+            settingsDirty = false; // Reset when opening
+        }
+        
+        function closeSettingsModal(force = false) {
+            if (!force && settingsDirty) {
+                showConfirmModal(
+                    "Osparade ändringar", 
+                    "Du har gjort ändringar utan att spara. Vill du verkligen stänga och förlora ändringarna?", 
+                    "Stäng ändå", 
+                    "btn-danger",
+                    () => { closeSettingsModal(true); }
+                );
+            } else {
+                document.getElementById('settingsModalOverlay').classList.remove('active');
+                if(settingsDirty) loadSettings(); // Revert back if forced close
+                resetTemplateForm();
+                settingsDirty = false;
+            }
+        }
+        
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // --- Toasts ---
+        function showToast(msg, type = 'success') {
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = `toast ${type}`;
+            t.innerHTML = `<span>${type === 'success' ? '✓' : '⚠'}</span> <span>${msg}</span>`;
+            c.appendChild(t);
+            t.offsetHeight; t.classList.add('show');
+            setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Python virtual environment
+venv/
+.venv/
+env/
+
+# Database files (user data)
+data/
+*.db
+*.sqlite3
+
+# Python bytecode and cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE and environment files
+.idea/
+.vscode/
+.env
+
+# Windows specific
+Thumbs.db
+Desktop.ini
