@@ -270,7 +270,11 @@
                     <textarea id="message" required></textarea>
                     <div id="charCount" class="char-counter">0 / 160 tecken (1 SMS)</div>
                 </div>
-                <div class="form-group" style="margin-bottom: 24px; flex-shrink: 0;">
+                <div class="form-group" style="margin-bottom: 24px; flex-shrink: 0; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; margin-bottom: 12px;">
+                        <input type="checkbox" id="printLabelCheck" checked style="width: auto;">
+                        Skriv ut etikett på Brother-skrivaren
+                    </label>
                     <label style="font-size: 0.85rem;">Extra info till etikett (skickas EJ till kund)</label>
                     <input type="text" id="labelInfo" placeholder="t.ex. Hylla A1 eller Reg.nr">
                 </div>
@@ -677,6 +681,14 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
         
         window.onload = checkAuth;
 
+        // Print checkbox logic
+        const printLabelCheck = document.getElementById('printLabelCheck');
+        const labelInfoInput = document.getElementById('labelInfo');
+        printLabelCheck.addEventListener('change', () => {
+            labelInfoInput.disabled = !printLabelCheck.checked;
+            labelInfoInput.style.opacity = printLabelCheck.checked ? '1' : '0.5';
+        });
+
         // --- Formatting & Live Textarea Update ---
         const templateDropdown = document.getElementById('templateDropdown');
         const messageTextarea = document.getElementById('message');
@@ -700,8 +712,20 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
 
         document.getElementById('article').addEventListener('input', updateMessage);
         templateDropdown.addEventListener('change', () => {
-            localStorage.setItem('last_template_text', templateDropdown.value);
             updateMessage();
+            localStorage.setItem('last_template_text', templateDropdown.value);
+
+            // Auto-toggle print checkbox
+            const selectedOpt = templateDropdown.options[templateDropdown.selectedIndex];
+            if (selectedOpt && selectedOpt.textContent) {
+                const tmplName = selectedOpt.textContent.toLowerCase();
+                if (tmplName.includes('försen') || tmplName.includes('påminn')) {
+                    printLabelCheck.checked = false;
+                } else {
+                    printLabelCheck.checked = true;
+                }
+                printLabelCheck.dispatchEvent(new Event('change'));
+            }
         });
         messageTextarea.addEventListener('input', updateCharCount);
 
@@ -722,7 +746,8 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
                         phone_number: document.getElementById('phone').value,
                         article: document.getElementById('article').value,
                         label_info: document.getElementById('labelInfo').value,
-                        message: messageTextarea.value
+                        message: messageTextarea.value,
+                        print_label: document.getElementById('printLabelCheck').checked
                     })
                 });
                 const data = await res.json();

@@ -472,6 +472,7 @@ def send_sms():
     label_info = data.get('label_info', '')
     amount = data.get('amount', '')
     message = data.get('message', '')
+    print_label = data.get('print_label', True)
 
     if not phone_number or not message:
         return jsonify({"success": False, "error": "Telefonnummer och meddelande är obligatoriskt."}), 400
@@ -528,7 +529,7 @@ def send_sms():
     conn.commit()
     conn.close()
 
-    if status == 'Sent' or status == 'Delivered' or status == 'Övningsläge (Ej skickat)':
+    if status in ['Sent', 'Delivered', 'Övningsläge (Ej skickat)'] and print_label:
         brother_enabled = get_setting("brother_enabled", "false") == "true"
         brother_ip = get_setting("brother_ip", "")
         brother_model = get_setting("brother_model", "")
