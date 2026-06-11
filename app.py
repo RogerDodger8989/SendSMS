@@ -7,15 +7,31 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, session
 import requests
+from datetime import datetime
+import json
+import threading
+import logging
+import traceback
+
+# --- Setup Debug Logging ---
+debug_logger = logging.getLogger("BrotherPrint")
+debug_logger.setLevel(logging.DEBUG)
+try:
+    fh = logging.FileHandler('data/print_debug.log', encoding='utf-8')
+    fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    debug_logger.addHandler(fh)
+except:
+    pass
+
 from dotenv import load_dotenv
 import socket
-import threading
 
 load_dotenv()
 
 # DB path: defaults to ./data (works locally and in Docker with WORKDIR /app)
 DB_DIR = os.environ.get("DB_DIR", "./data")
 DB_PATH = os.path.join(DB_DIR, "sms_logg.db")
+SETTINGS_PATH = os.path.join(DB_DIR, "settings.db")
 
 _PASSWORD_MASK = "__masked__"
 
@@ -29,6 +45,14 @@ def get_db_connection():
     if not os.path.exists(DB_DIR):
         os.makedirs(DB_DIR, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def get_settings_connection():
+    if not os.path.exists(DB_DIR):
+        os.makedirs(DB_DIR, exist_ok=True)
+    conn = sqlite3.connect(SETTINGS_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -70,19 +94,26 @@ def init_db():
             timestamp DATETIME
         )
     ''')
-
     try:
         conn.execute("ALTER TABLE sms_log ADD COLUMN picked_up INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass
+    try:
+        conn.execute("ALTER TABLE sms_log ADD COLUMN label_info TEXT")
+    except sqlite3.OperationalError:
+        pass
+    conn.commit()
+    conn.close()
 
+
+def init_settings_db():
+    conn = get_settings_connection()
     conn.execute('''
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
             value TEXT
         )
     ''')
-
     conn.execute('''
         CREATE TABLE IF NOT EXISTS templates (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,7 +121,6 @@ def init_db():
             text TEXT NOT NULL
         )
     ''')
-
     cursor = conn.cursor()
     cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('elks_username', '')")
     cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('elks_password', '')")
@@ -103,10 +133,23 @@ def init_db():
     cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('brother_label_size', '17x54')")
     cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('brother_enabled', 'false')")
 
-    try:
-        cursor.execute("ALTER TABLE sms_log ADD COLUMN label_info TEXT")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS suppliers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            parts_discount REAL DEFAULT 0,
+            other_discount REAL DEFAULT 0
+        )
+    ''')
+
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS customers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            default_margin REAL DEFAULT 0,
+            default_profit REAL DEFAULT 0
+        )
+    ''')
 
     cursor.execute("SELECT count(*) FROM templates")
     if cursor.fetchone()[0] == 0:
@@ -116,33 +159,74 @@ def init_db():
             ("Påminnelse", "Hej! Vi vill påminna om att din vara finns redo att hämtas ut. Välkommen!")
         ]
         cursor.executemany("INSERT INTO templates (name, text) VALUES (?, ?)", default_templates)
-
     conn.commit()
     conn.close()
 
 
 def purge_old_records():
-    conn = get_db_connection()
-    row = conn.execute("SELECT value FROM settings WHERE key = 'purge_days'").fetchone()
-    purge_days = int(row['value']) if row and row['value'].isdigit() else 90
+    purge_days_val = get_setting("purge_days", "90")
+    purge_days = int(purge_days_val) if purge_days_val.isdigit() else 90
     cutoff_date = datetime.now() - timedelta(days=purge_days)
     cutoff_str = cutoff_date.strftime('%Y-%m-%d %H:%M:%S')
+    conn = get_db_connection()
     conn.execute('DELETE FROM sms_log WHERE timestamp < ?', (cutoff_str,))
     conn.commit()
     conn.close()
 
 
 init_db()
+init_settings_db()
+
+def format_phone_for_print(phone):
+    if not phone: return ""
+    p = phone.replace(" ", "").replace("-", "")
+    if p.startswith("+46"):
+        p = "0" + p[3:]
+    elif p.startswith("46") and len(p) > 8:
+        p = "0" + p[2:]
+        
+    if p.startswith("07") and len(p) == 10:
+        return f"{p[:3]}-{p[3:6]} {p[6:8]} {p[8:]}"
+    elif p.startswith("08") and len(p) == 9:
+        return f"{p[:2]}-{p[2:5]} {p[5:7]} {p[7:]}"
+    elif p.startswith("0") and len(p) >= 9:
+        return f"{p[:3]}-{p[3:6]} {p[6:]}"
+    elif p.startswith("0"):
+        # Just put a hyphen after area code (approx 3 or 4 chars) if we don't know
+        return f"{p[:3]}-{p[3:]}"
+    return p
 
 def print_brother_label(ip_address, model, label_size, phone_number, name, timestamp, label_info=""):
     try:
+        phone_number = format_phone_for_print(phone_number)
+        debug_logger.info(f"---- STARTAR UTSKRIFT ----")
+        debug_logger.info(f"Mottagen Info -> IP/Namn: {ip_address}, Modell: {model}, Storlek: {label_size}")
         if not ip_address or not model or not label_size:
+            debug_logger.error("Saknar IP, modell eller etikettstorlek!")
             return False, "IP, modell eller etikett-storlek saknas"
-            
+        
         date_str = timestamp.split(' ')[0] if timestamp else ""
+        time_str = timestamp.split(' ')[1] if timestamp and ' ' in timestamp else ""
+        debug_logger.debug("Förbereder bild för utskrift...")
         
-        from PIL import Image, ImageDraw, ImageFont
+        # Load font mappings
+        try:
+            with open('data/fonts.json', 'r', encoding='utf-8') as f:
+                font_settings = json.load(f)
+        except Exception as e:
+            debug_logger.error(f"Kunde inte ladda fonts.json: {e}")
+            font_settings = {"family": "Arial", "sizes": {"title": 42, "body": 24, "footer": 18}}
+            
+        font_family = font_settings.get("family", "Arial")
+        font_sizes = font_settings.get("sizes", {"title": 42, "body": 24, "footer": 18})
         
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+            import win32print
+        except ImportError as e:
+            debug_logger.error(f"Ett bibliotek (PIL eller win32print) saknas: {e}")
+            return False, f"Bibliotek saknas: {e}"
+
         dimensions = {
             '17x54': (566, 165),
             '29x90': (991, 306),
@@ -158,34 +242,41 @@ def print_brother_label(ip_address, model, label_size, phone_number, name, times
         try:
             large_size = int(canvas_size[1] * 0.30)
             med_size = int(canvas_size[1] * 0.22)
-            font_large = ImageFont.truetype("arial.ttf", large_size)
-            font_medium = ImageFont.truetype("arial.ttf", med_size)
-        except:
+            font_path = f"c:/Windows/Fonts/{font_family.lower()}.ttf"
+            font_large = ImageFont.truetype(font_path, large_size)
+            font_medium = ImageFont.truetype(font_path, med_size)
+        except IOError:
+            debug_logger.warning("Kunde inte hitta vald font, använder standardfont.")
             font_large = ImageFont.load_default()
             font_medium = ImageFont.load_default()
-
+            
         if name:
             y_offset = int(canvas_size[1] * 0.05)
             y_step = int(canvas_size[1] * 0.32)
             d.text((20, y_offset), name, fill='black', font=font_large)
             d.text((20, y_offset + y_step), phone_number, fill='black', font=font_medium)
-            d.text((int(canvas_size[0]*0.65), y_offset + y_step), date_str, fill='black', font=font_medium)
+            d.text((int(canvas_size[0]*0.65), y_offset + y_step), f"{date_str} {time_str}", fill='black', font=font_medium)
             if label_info:
                 d.text((20, y_offset + 2 * y_step), label_info, fill='black', font=font_medium)
         else:
             y_offset = int(canvas_size[1] * 0.15)
             y_step = int(canvas_size[1] * 0.35)
             d.text((20, y_offset), phone_number, fill='black', font=font_large)
-            d.text((int(canvas_size[0]*0.65), y_offset), date_str, fill='black', font=font_medium)
+            d.text((int(canvas_size[0]*0.65), y_offset), f"{date_str} {time_str}", fill='black', font=font_medium)
             if label_info:
                 d.text((20, y_offset + y_step), label_info, fill='black', font=font_large)
 
         img = img.transpose(Image.ROTATE_90)
+        debug_logger.debug(f"Bild genererad framgångsrikt! (Storlek: {img.size})")
         
-        from brother_ql.conversion import convert
-        from brother_ql.raster import BrotherQLRaster
-        from brother_ql.backends.helpers import send
+        try:
+            from brother_ql.conversion import convert
+            from brother_ql.raster import BrotherQLRaster
+        except ImportError as e:
+            debug_logger.error(f"Kunde inte importera brother_ql: {e}")
+            return False, f"brother_ql saknas: {e}"
         
+        debug_logger.debug("Konverterar till Brother-raster...")
         qlr = BrotherQLRaster(model)
         instructions = convert(
             qlr=qlr,
@@ -200,10 +291,47 @@ def print_brother_label(ip_address, model, label_size, phone_number, name, times
             hq=True,
             align='center'
         )
+        debug_logger.debug(f"Raster-instruktioner klara (Storlek: {len(instructions)} bytes).")
         
-        send(instructions=instructions, printer_identifier=f'tcp://{ip_address}', backend_identifier='network', blocking=True)
+        printer_name = ip_address.strip()
+        is_ip = ("." in printer_name and not printer_name.startswith("\\\\") and "brother" not in printer_name.lower()) or printer_name.startswith("tcp://")
+        
+        if is_ip:
+            debug_logger.info(f"Använder nätverksbackend för IP: {printer_name}")
+            from brother_ql.backends.helpers import send
+            if not printer_name.startswith('tcp://'):
+                printer_name = f'tcp://{printer_name}'
+            debug_logger.debug("Skickar instruktioner över tcp...")
+            send(instructions=instructions, printer_identifier=printer_name, backend_identifier='network', blocking=True)
+            debug_logger.info("Instruktioner skickade över nätverket!")
+        else:
+            debug_logger.info(f"Använder Windows win32print för skrivare: {printer_name}")
+            try:
+                hprinter = win32print.OpenPrinter(printer_name)
+                debug_logger.debug(f"Fick skrivar-handle: {hprinter}")
+            except Exception as e:
+                debug_logger.error(f"Kunde INTE öppna Windows-skrivaren '{printer_name}': {e}")
+                return False, f"Hittade inte skrivaren '{printer_name}' i Windows"
+                
+            try:
+                debug_logger.debug("Startar utskriftsjobb i Windows-kön...")
+                win32print.StartDocPrinter(hprinter, 1, ("Etikett - SendSMS", None, "RAW"))
+                try:
+                    win32print.StartPagePrinter(hprinter)
+                    win32print.WritePrinter(hprinter, instructions)
+                    debug_logger.debug("Rådata överförd till Windows-kön.")
+                    win32print.EndPagePrinter(hprinter)
+                finally:
+                    win32print.EndDocPrinter(hprinter)
+                    debug_logger.info("Utskriftsjobb avslutat och inlagt i kön!")
+            finally:
+                win32print.ClosePrinter(hprinter)
+                debug_logger.debug("Skrivar-handle stängd.")
+        
+        debug_logger.info("---- UTSKRIFT KLAR ----")
         return True, "Utskrift skickad"
     except Exception as e:
+        debug_logger.error(f"Kritiskt undantag i print_brother_label: {str(e)}\n{traceback.format_exc()}")
         return False, str(e)
 
 
@@ -223,7 +351,7 @@ def sanitize_phone_number(number):
 
 
 def get_setting(key, default=""):
-    conn = get_db_connection()
+    conn = get_settings_connection()
     row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
     conn.close()
     return row['value'] if row else default
@@ -288,7 +416,7 @@ def login():
     if not app_pin:
         if not pin:
             return jsonify({"success": False, "error": "PIN får inte vara tom"}), 400
-        conn = get_db_connection()
+        conn = get_settings_connection()
         conn.execute("UPDATE settings SET value = ? WHERE key = 'app_pin'", (pin,))
         conn.commit()
         conn.close()
@@ -317,7 +445,7 @@ def change_pin():
     if app_pin and old_pin != app_pin and old_pin != master_pin:
         return jsonify({"success": False, "error": "Gammal PIN stämmer inte"}), 401
 
-    conn = get_db_connection()
+    conn = get_settings_connection()
     conn.execute("UPDATE settings SET value = ? WHERE key = 'app_pin'", (new_pin,))
     conn.commit()
     conn.close()
@@ -373,7 +501,7 @@ def toggle_pickup(id):
 
 @app.route('/api/templates', methods=['GET', 'POST'])
 def handle_templates():
-    conn = get_db_connection()
+    conn = get_settings_connection()
     if request.method == 'GET':
         templates = conn.execute("SELECT * FROM templates ORDER BY id").fetchall()
         conn.close()
@@ -400,7 +528,7 @@ def handle_templates():
 
 @app.route('/api/templates/<int:id>', methods=['DELETE'])
 def delete_template(id):
-    conn = get_db_connection()
+    conn = get_settings_connection()
     conn.execute("DELETE FROM templates WHERE id = ?", (id,))
     conn.commit()
     conn.close()
@@ -429,7 +557,7 @@ def handle_settings():
         sender = data.get('elks_sender', '')
         if len(sender) > 11:
             return jsonify({"success": False, "error": "Avsändaren får max vara 11 tecken"}), 400
-        conn = get_db_connection()
+        conn = get_settings_connection()
         for key in ['elks_username', 'elks_password', 'elks_sender', 'test_mode', 'purge_days', 'brother_ip', 'brother_model', 'brother_label_size', 'brother_enabled']:
             if key not in data:
                 continue
@@ -440,6 +568,70 @@ def handle_settings():
         conn.commit()
         conn.close()
         return jsonify({"success": True})
+
+
+@app.route('/api/suppliers', methods=['GET', 'POST'])
+def handle_suppliers():
+    conn = get_settings_connection()
+    if request.method == 'GET':
+        rows = conn.execute("SELECT * FROM suppliers ORDER BY name").fetchall()
+        conn.close()
+        return jsonify([dict(r) for r in rows])
+    data = request.json
+    name = data.get('name', '').strip()
+    if not name:
+        conn.close()
+        return jsonify({"success": False, "error": "Namn krävs"}), 400
+    if data.get('id'):
+        conn.execute("UPDATE suppliers SET name=?, parts_discount=?, other_discount=? WHERE id=?",
+                     (name, data.get('parts_discount', 0), data.get('other_discount', 0), data['id']))
+    else:
+        conn.execute("INSERT INTO suppliers (name, parts_discount, other_discount) VALUES (?, ?, ?)",
+                     (name, data.get('parts_discount', 0), data.get('other_discount', 0)))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+
+@app.route('/api/suppliers/<int:id>', methods=['DELETE'])
+def delete_supplier(id):
+    conn = get_settings_connection()
+    conn.execute("DELETE FROM suppliers WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+
+@app.route('/api/customers', methods=['GET', 'POST'])
+def handle_customers():
+    conn = get_settings_connection()
+    if request.method == 'GET':
+        rows = conn.execute("SELECT * FROM customers ORDER BY name").fetchall()
+        conn.close()
+        return jsonify([dict(r) for r in rows])
+    data = request.json
+    name = data.get('name', '').strip()
+    if not name:
+        conn.close()
+        return jsonify({"success": False, "error": "Namn krävs"}), 400
+    if data.get('id'):
+        conn.execute("UPDATE customers SET name=?, default_margin=?, default_profit=? WHERE id=?",
+                     (name, data.get('default_margin', 0), data.get('default_profit', 0), data['id']))
+    else:
+        conn.execute("INSERT INTO customers (name, default_margin, default_profit) VALUES (?, ?, ?)",
+                     (name, data.get('default_margin', 0), data.get('default_profit', 0)))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+
+@app.route('/api/customers/<int:id>', methods=['DELETE'])
+def delete_customer(id):
+    conn = get_settings_connection()
+    conn.execute("DELETE FROM customers WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
 
 
 @app.route('/api/balance', methods=['GET'])
@@ -529,7 +721,7 @@ def send_sms():
     conn.commit()
     conn.close()
 
-    if status in ['Sent', 'Delivered', 'Övningsläge (Ej skickat)'] and print_label:
+    if not error_msg and print_label:
         brother_enabled = get_setting("brother_enabled", "false") == "true"
         brother_ip = get_setting("brother_ip", "")
         brother_model = get_setting("brother_model", "")
@@ -549,7 +741,7 @@ def test_brother():
     model = data.get('model', '')
     label_size = data.get('label_size', '17x54')
     if not ip or not model:
-        return jsonify({"success": False, "error": "IP-adress eller modell saknas"}), 400
+        return jsonify({"success": False, "error": "Skrivarnamn eller modell saknas"}), 400
     
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     success, msg = print_brother_label(ip, model, label_size, "070 123 45 67", "Test Testsson", current_time, "Hylla A1")

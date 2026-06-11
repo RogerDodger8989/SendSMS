@@ -36,16 +36,20 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         
-        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
-        body { 
-            background-color: var(--bg-color); 
-            color: var(--text-main); 
-            line-height: 1.5; 
-            padding: 20px; 
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 20px;
+            height: 100vh;
+            overflow: hidden;
             transition: background-color 0.5s ease, color 0.5s ease;
             display: flex;
             flex-direction: column;
         }
+
+        #panel-sms, #panel-priser { flex: 1; min-height: 0; display: flex; flex-direction: column; }
         
         /* Test Mode Border */
         .test-mode-border {
@@ -57,7 +61,7 @@
         }
         body.test-mode-active .test-mode-border { opacity: 1; }
 
-        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%; max-width: 1600px; margin: 0 auto 20px; flex-shrink: 0; }
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%; margin: 0 0 20px 0; flex-shrink: 0; }
         .header h1 { font-size: 1.5rem; color: var(--text-main); }
         .header-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
         #appLogo { height: 100px; width: auto; max-width: 100%; object-fit: contain; }
@@ -68,17 +72,17 @@
         .btn-settings { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: all 0.3s; }
         .btn-settings:hover { background: var(--input-bg); }
 
-        .container { flex-grow: 1; max-width: 1600px; width: 100%; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 20px; position: relative; z-index: 1; overflow: hidden; }
+        .container { flex: 1; min-height: 0; width: 100%; display: grid; grid-template-columns: 1fr; grid-template-rows: 1fr; gap: 20px; position: relative; z-index: 1; align-items: stretch; }
         @media (min-width: 768px) { .container { grid-template-columns: 400px 1fr; } }
         @media (min-width: 1200px) { .container { grid-template-columns: 450px 1fr; } }
 
-        .card { background: var(--card-bg); border-radius: var(--radius); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 24px; transition: background-color 0.5s ease; display: flex; flex-direction: column; }
-        h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .card { background: var(--card-bg); border-radius: var(--radius); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 16px; transition: background-color 0.5s ease; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+        h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
 
-        .form-group { margin-bottom: 16px; }
-        label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 6px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 4px; }
         input[type="text"], input[type="tel"], input[type="password"], input[type="number"], select, textarea {
-            width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; transition: all 0.2s; background-color: var(--input-bg); color: var(--text-main);
+            width: 100%; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; transition: all 0.2s; background-color: var(--input-bg); color: var(--text-main);
         }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-color); background-color: var(--card-bg); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
         textarea { resize: none; font-size: 1rem; line-height: 1.4; flex-grow: 1; }
@@ -147,6 +151,49 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Main nav tabs (SMS / Priser) — sits as its own block in the header flex row */
+        .main-nav-tabs { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .main-nav-tab {
+            background: transparent; border: 2px solid var(--border-color);
+            padding: 12px 28px; border-radius: 10px;
+            font-size: 1.05rem; font-weight: 700;
+            cursor: pointer; color: var(--text-muted); transition: all 0.2s;
+            font-family: 'Inter', sans-serif; line-height: 1;
+        }
+        .main-nav-tab:hover { border-color: var(--primary-color); color: var(--primary-color); }
+        .main-nav-tab.active { background: var(--primary-color); border-color: var(--primary-color); color: white; }
+
+        /* Priser inner tabs */
+        .priser-tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+        .priser-tab { padding: 10px 16px; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; transition: all 0.2s; color: var(--text-muted); }
+        .priser-tab.active { border-bottom-color: var(--primary-color); color: var(--primary-color); }
+        .priser-tab:hover:not(.active) { color: var(--primary-hover); }
+        .priser-tab-content { display: none; }
+        .priser-tab-content.active { display: block; animation: fadeIn 0.3s; }
+
+        /* Priser calculator */
+        .calc-breakdown { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; margin-top: 6px; font-size: 0.875rem; transition: opacity 0.2s; }
+        .calc-breakdown-row { display: flex; justify-content: space-between; padding: 3px 0; }
+        .calc-breakdown-row.total { font-weight: 700; border-top: 1px solid var(--border-color); margin-top: 4px; padding-top: 6px; }
+        .calc-result-box { background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); color: white; border-radius: 10px; padding: 12px 20px; margin-top: 10px; text-align: center; transition: opacity 0.2s; }
+        .calc-result-box .result-label { font-size: 0.8rem; opacity: 0.85; margin-bottom: 2px; }
+        .calc-result-box .result-value { font-size: 1.8rem; font-weight: 700; }
+        .quick-margin-btns { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .quick-margin-btn { flex: 1; min-width: 55px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 600; color: var(--text-main); transition: all 0.2s; font-family: 'Inter', sans-serif; }
+        .quick-margin-btn:hover { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        /* Mgmt list items */
+        .mgmt-list-item { border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 8px; background: var(--input-bg); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .mgmt-list-item .item-info { flex: 1; min-width: 0; }
+        .mgmt-list-item .item-name { font-weight: 600; font-size: 0.9rem; }
+        .mgmt-list-item .item-details { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+        .mgmt-list-item .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+        @media (max-width: 600px) {
+            .main-nav-tabs { gap: 2px; }
+            .main-nav-tab { padding: 8px 14px; font-size: 0.875rem; }
+        }
+
         /* Toasts */
         .toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
         .toast { padding: 16px 24px; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; gap: 10px; align-items: center; }
@@ -162,7 +209,10 @@
 
         /* Mobile adjustments */
         @media (max-width: 600px) {
-            body { padding: 10px; }
+            body { padding: 10px; overflow: auto; height: auto; }
+            #panel-sms, #panel-priser { flex: none; }
+            .container { grid-template-rows: auto; height: auto; }
+            .card { overflow: visible; min-height: 300px; }
             
             /* Header & Logo */
             .header { flex-direction: column; align-items: center; text-align: center; gap: 10px; margin-bottom: 14px; }
@@ -221,7 +271,13 @@
 
     <!-- Main Content -->
     <div class="header">
-        <img id="appLogo" src="/static/logo-light.png" style="height: 100px; width: auto;" alt="SendSms">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <img id="appLogo" src="/static/logo-light.png" style="height: 100px; width: auto;" alt="SendSms">
+            <nav class="main-nav-tabs">
+                <button class="main-nav-tab active" onclick="switchMainTab('sms')">SMS</button>
+                <button class="main-nav-tab" onclick="switchMainTab('priser')">Priser</button>
+            </nav>
+        </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end;">
             <span id="serverIpDisplay" style="font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.02em;"></span>
             <div class="header-actions" style="align-items: center;">
@@ -244,12 +300,14 @@
             </div>
         </div>
     </div>
+    <!-- end header -->
 
+    <div id="panel-sms">
     <div class="container">
         <!-- Vänster kolumn: Formulär -->
         <div class="card">
             <h2 style="flex-shrink: 0;">Skicka SMS</h2>
-            <form id="smsForm" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
+            <form id="smsForm" style="display: flex; flex-direction: column; flex-grow: 1; min-height: 0;">
                 <div class="form-group" style="flex-shrink: 0;">
                     <label>Telefonnummer *</label>
                     <input type="tel" id="phone" required placeholder="t.ex. 070 123 45 67">
@@ -265,9 +323,9 @@
                         <option value="">-- Laddar mallar... --</option>
                     </select>
                 </div>
-                <div class="form-group" style="flex-grow: 1; display: flex; flex-direction: column;">
+                <div class="form-group" style="display: flex; flex-direction: column;">
                     <label>Meddelande *</label>
-                    <textarea id="message" required></textarea>
+                    <textarea id="message" required rows="6"></textarea>
                     <div id="charCount" class="char-counter">0 / 160 tecken (1 SMS)</div>
                 </div>
                 <div class="form-group" style="margin-bottom: 24px; flex-shrink: 0; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
@@ -311,6 +369,134 @@
             </div>
         </div>
     </div>
+    </div><!-- end panel-sms -->
+
+    <!-- PRISER PANEL -->
+    <div id="panel-priser" style="display:none;">
+        <div class="container">
+
+            <!-- Vänster: Inmatning -->
+            <div class="card">
+                <h2>Prisberäkning</h2>
+
+                <div class="form-group">
+                    <label>Leverantör</label>
+                    <select id="calcSupplier" onchange="recalculate()">
+                        <option value="">— Välj leverantör —</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Sortiment</label>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <label style="display:flex;align-items:center;gap:5px;margin-bottom:0;flex:1;min-width:90px;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:8px;cursor:pointer;">
+                            <input type="radio" name="discountType" value="parts" checked onchange="recalculate()" style="width:auto;">
+                            Reservdelar
+                        </label>
+                        <label style="display:flex;align-items:center;gap:5px;margin-bottom:0;flex:1;min-width:70px;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:8px;cursor:pointer;">
+                            <input type="radio" name="discountType" value="other" onchange="recalculate()" style="width:auto;">
+                            Övrigt
+                        </label>
+                        <label style="display:flex;align-items:center;gap:5px;margin-bottom:0;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:8px;cursor:pointer;white-space:nowrap;">
+                            <input type="radio" name="discountType" value="custom" onchange="recalculate()" style="width:auto;">
+                            Egen %
+                            <input type="number" id="calcCustomDiscount" min="0" max="100" step="0.1" placeholder="0" oninput="onCustomDiscountInput()" style="width:52px;padding:3px 5px;margin-left:3px;font-size:0.9rem;">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Frakt (kr, ex. moms)</label>
+                    <input type="number" id="calcFrakt" min="0" step="0.01" placeholder="0.00" oninput="recalculate()">
+                </div>
+
+                <div class="form-group">
+                    <label>Inpris (kr)</label>
+                    <input type="number" id="calcInpris" min="0" step="0.01" placeholder="0.00" oninput="recalculate()">
+                </div>
+
+                <div class="form-group">
+                    <label>Marginal (%)</label>
+                    <input type="number" id="calcMarginal" min="0" max="99.9" step="0.1" placeholder="0.0" oninput="onMarginalInput()">
+                    <div class="quick-margin-btns">
+                        <button class="quick-margin-btn" onclick="setMarginal(50)">50%</button>
+                        <button class="quick-margin-btn" onclick="setMarginal(55)">55%</button>
+                        <button class="quick-margin-btn" onclick="setMarginal(60)">60%</button>
+                        <button class="quick-margin-btn" onclick="setMarginal(65)">65%</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Vinst (kr)</label>
+                    <input type="number" id="calcVinst" min="0" step="0.01" placeholder="0.00" oninput="onVinstInput()">
+                </div>
+            </div>
+
+            <!-- Höger: Resultat + Leverantörer -->
+            <div class="card">
+
+                <!-- Beräkningsresultat — alltid synlig -->
+                <h2>Resultat</h2>
+                <div class="calc-breakdown" style="flex-shrink:0; margin-bottom:10px;">
+                    <div class="calc-breakdown-row">
+                        <span>Inpris</span><span id="rInpris">—</span>
+                    </div>
+                    <div class="calc-breakdown-row">
+                        <span>Rabatt (<span id="rDiscPct">—</span>%)</span><span id="rDiscAmt">—</span>
+                    </div>
+                    <div class="calc-breakdown-row">
+                        <span>Nettopris</span><span id="rNetto">—</span>
+                    </div>
+                    <div class="calc-breakdown-row">
+                        <span>Frakt</span><span id="rFrakt">—</span>
+                    </div>
+                    <div class="calc-breakdown-row">
+                        <span>Vinst</span><span id="rVinst">—</span>
+                    </div>
+                    <div class="calc-breakdown-row total">
+                        <span>Marginal</span><span id="rMarginal">—</span>
+                    </div>
+                    <div class="calc-breakdown-row" style="border-top:1px solid var(--border-color); margin-top:6px; padding-top:6px;">
+                        <span>Moms (25%)</span><span id="rMoms">—</span>
+                    </div>
+                </div>
+                <div class="calc-result-box" style="flex-shrink:0; margin-bottom:14px;">
+                    <div class="result-label">Kundpris inkl. moms</div>
+                    <div class="result-value" id="calcUtpris">—</div>
+                </div>
+
+                <!-- Leverantörer — tar resterande plats -->
+                <div style="border-top:1px solid var(--border-color); padding-top:12px; flex:1; min-height:0; overflow-y:auto; scrollbar-width:none;">
+                    <h3 style="font-size:0.95rem; font-weight:600; margin-bottom:10px;">Leverantörer</h3>
+                    <div id="suppliersList" style="margin-bottom:12px;"></div>
+                    <div style="border-top:1px solid var(--border-color); padding-top:12px;">
+                        <p style="font-size:0.85rem; font-weight:600; margin-bottom:8px; color:var(--text-muted);">Ny / Redigera</p>
+                        <input type="hidden" id="editSupplierId">
+                        <div class="form-group">
+                            <label>Namn</label>
+                            <input type="text" id="editSupplierName" placeholder="t.ex. Mekonomen">
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <div class="form-group">
+                                <label>Rabatt reservdelar (%)</label>
+                                <input type="number" id="editSupplierParts" min="0" max="100" step="0.1" placeholder="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Rabatt övrigt (%)</label>
+                                <input type="number" id="editSupplierOther" min="0" max="100" step="0.1" placeholder="0">
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-primary" style="flex:1;" onclick="saveSupplier()">Spara</button>
+                            <button class="btn-outline" style="flex:1;" onclick="resetSupplierForm()">Ångra</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div><!-- end panel-priser -->
 
     <div class="toast-container" id="toastContainer"></div>
 
@@ -447,8 +633,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label>IP-adress på nätverket</label>
-                    <input type="text" id="brotherIp" placeholder="t.ex. 192.168.1.150">
+                    <label>IP-adress eller Skrivarnamn (Windows)</label>
+                    <input type="text" id="brotherIp" placeholder="t.ex. Brother QL-700">
+                    <div style="font-size: 0.85rem; color: #888; margin-top: 6px; line-height: 1.4;">
+                        • <b>Lokal (USB):</b> Ange skrivarens exakta namn i Windows, t.ex. <code>Brother QL-700</code><br>
+                        • <b>Utdelad skrivare:</b> Ange nätverkssökvägen, t.ex. <code>\\DATORNAMN\Brother QL-700</code><br>
+                        • <b>Nätverksskrivare (LAN/Wi-Fi):</b> Ange IP-adressen, t.ex. <code>192.168.1.150</code>
+                    </div>
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -1141,6 +1332,176 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
             } catch(e) {
                 showToast('Kunde inte ansluta till servern', 'error');
             }
+        }
+
+        // --- Main tab navigation ---
+        function switchMainTab(tab) {
+            document.querySelectorAll('.main-nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.main-nav-tab[onclick="switchMainTab('${tab}')"]`).classList.add('active');
+            document.getElementById('panel-sms').style.display = tab === 'sms' ? '' : 'none';
+            document.getElementById('panel-priser').style.display = tab === 'priser' ? '' : 'none';
+            if (tab === 'priser') { loadSuppliers(); }
+        }
+
+        function switchPriserTab(tabId) {
+            document.querySelectorAll('.priser-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.priser-tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.priser-tab[onclick="switchPriserTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // --- Priser: Calculator ---
+        let suppliersData = [];
+        let calcLastEdited = 'marginal';
+
+        function formatKr(val) {
+            return val.toLocaleString('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kr';
+        }
+
+        function getNettoPrice() {
+            const inpris = parseFloat(document.getElementById('calcInpris').value) || 0;
+            const supplierId = parseInt(document.getElementById('calcSupplier').value);
+            const supplier = suppliersData.find(s => s.id === supplierId) || null;
+            const type = document.querySelector('input[name="discountType"]:checked').value;
+            let discount = 0;
+            if (type === 'custom') {
+                discount = parseFloat(document.getElementById('calcCustomDiscount').value) || 0;
+            } else if (supplier) {
+                discount = type === 'parts' ? supplier.parts_discount : supplier.other_discount;
+            }
+            return { inpris, discount, netto: inpris * (1 - discount / 100) };
+        }
+
+        function onCustomDiscountInput() {
+            document.querySelector('input[name="discountType"][value="custom"]').checked = true;
+            recalculate();
+        }
+
+        function recalculate() {
+            const { inpris, discount, netto } = getNettoPrice();
+            const frakt = parseFloat(document.getElementById('calcFrakt').value) || 0;
+            const hasInpris = inpris > 0;
+
+            document.getElementById('rInpris').textContent = hasInpris ? formatKr(inpris) : '—';
+            document.getElementById('rDiscPct').textContent = hasInpris ? (discount % 1 === 0 ? discount : discount.toFixed(1)) : '—';
+            document.getElementById('rDiscAmt').textContent = hasInpris ? '−' + formatKr(inpris * discount / 100) : '—';
+            document.getElementById('rNetto').textContent = hasInpris ? formatKr(netto) : '—';
+            document.getElementById('rFrakt').textContent = frakt > 0 ? formatKr(frakt) : '—';
+
+            if (!hasInpris) {
+                document.getElementById('rVinst').textContent = '—';
+                document.getElementById('rMarginal').textContent = '—';
+                document.getElementById('rMoms').textContent = '—';
+                document.getElementById('calcUtpris').textContent = '—';
+                return;
+            }
+
+            let goodsPrice, vinst, marginalPct;
+            if (calcLastEdited === 'marginal') {
+                const m = parseFloat(document.getElementById('calcMarginal').value);
+                if (!isNaN(m) && m >= 0 && m < 100) {
+                    goodsPrice = netto / (1 - m / 100);
+                    vinst = goodsPrice - netto;
+                    marginalPct = m;
+                    document.getElementById('calcVinst').value = vinst.toFixed(2);
+                }
+            } else {
+                const v = parseFloat(document.getElementById('calcVinst').value);
+                if (!isNaN(v) && v >= 0) {
+                    vinst = v;
+                    goodsPrice = netto + v;
+                    marginalPct = goodsPrice > 0 ? (1 - netto / goodsPrice) * 100 : 0;
+                    document.getElementById('calcMarginal').value = marginalPct.toFixed(1);
+                }
+            }
+
+            if (goodsPrice !== undefined) {
+                const totalExMoms = goodsPrice + frakt;
+                const moms = totalExMoms * 0.25;
+                document.getElementById('rVinst').textContent = formatKr(vinst);
+                document.getElementById('rMarginal').textContent = marginalPct.toFixed(1) + ' %';
+                document.getElementById('rMoms').textContent = formatKr(moms);
+                document.getElementById('calcUtpris').textContent = formatKr(totalExMoms * 1.25);
+            } else {
+                document.getElementById('rVinst').textContent = '—';
+                document.getElementById('rMarginal').textContent = '—';
+                document.getElementById('rMoms').textContent = '—';
+                document.getElementById('calcUtpris').textContent = '—';
+            }
+        }
+
+        function onMarginalInput() { calcLastEdited = 'marginal'; recalculate(); }
+        function onVinstInput() { calcLastEdited = 'vinst'; recalculate(); }
+        function setMarginal(pct) { document.getElementById('calcMarginal').value = pct; calcLastEdited = 'marginal'; recalculate(); }
+
+        // --- Priser: Suppliers ---
+        async function loadSuppliers() {
+            const res = await fetch('/api/suppliers', { cache: 'no-store' });
+            if (res.status === 401) return checkAuth();
+            suppliersData = await res.json();
+            renderSuppliersList();
+            const sel = document.getElementById('calcSupplier');
+            const cur = sel.value;
+            sel.innerHTML = '<option value="">— Välj leverantör —</option>';
+            suppliersData.forEach(s => {
+                const o = document.createElement('option');
+                o.value = s.id; o.textContent = s.name; sel.appendChild(o);
+            });
+            if (cur) sel.value = cur;
+        }
+
+        function renderSuppliersList() {
+            const list = document.getElementById('suppliersList');
+            list.innerHTML = '';
+            if (!suppliersData.length) { list.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem;">Inga leverantörer tillagda.</p>'; return; }
+            suppliersData.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'mgmt-list-item';
+                div.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-name">${escHtml(s.name)}</div>
+                        <div class="item-details">Reservdelar: ${s.parts_discount}% &nbsp;|&nbsp; Övrigt: ${s.other_discount}%</div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-settings" style="padding:6px 12px;font-size:0.8rem;" onclick="editSupplier(${s.id})">Redigera</button>
+                        <button class="btn-danger" style="padding:6px 12px;font-size:0.8rem;" onclick="deleteSupplier(${s.id})">Radera</button>
+                    </div>`;
+                list.appendChild(div);
+            });
+        }
+
+        function editSupplier(id) {
+            const s = suppliersData.find(x => x.id === id);
+            if (!s) return;
+            document.getElementById('editSupplierId').value = s.id;
+            document.getElementById('editSupplierName').value = s.name;
+            document.getElementById('editSupplierParts').value = s.parts_discount;
+            document.getElementById('editSupplierOther').value = s.other_discount;
+            document.getElementById('editSupplierName').focus();
+        }
+
+        function resetSupplierForm() {
+            ['editSupplierId','editSupplierName','editSupplierParts','editSupplierOther'].forEach(id => document.getElementById(id).value = '');
+        }
+
+        async function saveSupplier() {
+            const name = document.getElementById('editSupplierName').value.trim();
+            if (!name) return showToast('Namn krävs', 'error');
+            const idVal = document.getElementById('editSupplierId').value;
+            const res = await fetch('/api/suppliers', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: idVal ? parseInt(idVal) : null, name, parts_discount: parseFloat(document.getElementById('editSupplierParts').value) || 0, other_discount: parseFloat(document.getElementById('editSupplierOther').value) || 0 })
+            });
+            const data = await res.json();
+            if (data.success) { showToast('Leverantör sparad'); resetSupplierForm(); loadSuppliers(); }
+            else showToast(data.error || 'Kunde inte spara', 'error');
+        }
+
+        function deleteSupplier(id) {
+            showConfirmModal('Radera leverantör', 'Är du säker?', 'Radera', 'btn-danger', async () => {
+                await fetch(`/api/suppliers/${id}`, { method: 'DELETE' });
+                showToast('Leverantör raderad'); loadSuppliers();
+            });
         }
 
         // --- Toasts ---
