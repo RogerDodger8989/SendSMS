@@ -771,5 +771,72 @@ def reprint():
         return jsonify({"success": True})
     return jsonify({"success": False, "error": msg}), 500
 
+@app.route('/api/print-custom-label', methods=['POST'])
+def print_custom_label():
+    import base64, io as _io
+    data = request.json
+    image_b64 = data.get('image', '')
+    label_size = data.get('label_size', '')
+
+    if not image_b64:
+        return jsonify({"success": False, "error": "Ingen bild"}), 400
+
+    brother_ip    = get_setting("brother_ip", "")
+    brother_model = get_setting("brother_model", "")
+    if not label_size:
+        label_size = get_setting("brother_label_size", "17x54")
+
+    if not brother_ip or not brother_model:
+        return jsonify({"success": False, "error": "Skrivaren är inte konfigurerad i inställningarna"}), 400
+
+    try:
+        from PIL import Image
+        dimensions = {
+            '17x54': (566, 165), '29x90': (991, 306), '39x90': (991, 413),
+            '62x29': (696, 271), '62x100': (1109, 696)
+        }
+        target = dimensions.get(label_size, (566, 165))
+
+        img_data = base64.b64decode(image_b64)
+        img = Image.open(_io.BytesIO(img_data)).convert('RGB')
+        img = img.resize(target, Image.LANCZOS)
+        img = img.transpose(Image.ROTATE_90)
+
+        from brother_ql.conversion import convert
+        from brother_ql.raster import BrotherQLRaster
+        qlr = BrotherQLRaster(brother_model)
+        instructions = convert(
+            qlr=qlr, images=[img], label=label_size,
+            rotate='0', threshold=70, dither=False,
+            compress=False, red=False, dpi_600=False, hq=True, align='center'
+        )
+
+        printer_name = brother_ip.strip()
+        is_ip = ("." in printer_name and not printer_name.startswith("\\\\") and "brother" not in printer_name.lower()) or printer_name.startswith("tcp://")
+
+        if is_ip:
+            from brother_ql.backends.helpers import send
+            if not printer_name.startswith('tcp://'):
+                printer_name = f'tcp://{printer_name}'
+            send(instructions=instructions, printer_identifier=printer_name, backend_identifier='network', blocking=True)
+        else:
+            import win32print
+            hprinter = win32print.OpenPrinter(printer_name)
+            try:
+                win32print.StartDocPrinter(hprinter, 1, ("Etikett - SendSMS", None, "RAW"))
+                try:
+                    win32print.StartPagePrinter(hprinter)
+                    win32print.WritePrinter(hprinter, instructions)
+                    win32print.EndPagePrinter(hprinter)
+                finally:
+                    win32print.EndDocPrinter(hprinter)
+            finally:
+                win32print.ClosePrinter(hprinter)
+
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

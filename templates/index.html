@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="/static/logo-light.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
         /* Light Theme (Default) */
         :root {
@@ -49,7 +50,7 @@
             flex-direction: column;
         }
 
-        #panel-sms, #panel-priser { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+        #panel-sms, #panel-priser, #panel-etikett { flex: 1; min-height: 0; display: flex; flex-direction: column; }
         
         /* Test Mode Border */
         .test-mode-border {
@@ -81,7 +82,7 @@
 
         .form-group { margin-bottom: 10px; }
         label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 4px; }
-        input[type="text"], input[type="tel"], input[type="password"], input[type="number"], select, textarea {
+        input[type="text"], input[type="tel"], input[type="password"], input[type="number"], input[type="url"], select, textarea {
             width: 100%; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; transition: all 0.2s; background-color: var(--input-bg); color: var(--text-main);
         }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-color); background-color: var(--card-bg); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
@@ -211,7 +212,7 @@
         /* Mobile adjustments */
         @media (max-width: 600px) {
             body { padding: 10px; overflow: auto; height: auto; }
-            #panel-sms, #panel-priser { flex: none; }
+            #panel-sms, #panel-priser, #panel-etikett { flex: none; }
             .container { grid-template-rows: auto; height: auto; }
             .card { overflow: visible; min-height: 300px; }
             
@@ -277,6 +278,7 @@
             <nav class="main-nav-tabs">
                 <button class="main-nav-tab active" onclick="switchMainTab('sms')">SMS</button>
                 <button class="main-nav-tab" onclick="switchMainTab('priser')">Priser</button>
+                <button class="main-nav-tab" onclick="switchMainTab('etikett')">Etikett</button>
             </nav>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end;">
@@ -504,6 +506,85 @@
 
         </div>
     </div><!-- end panel-priser -->
+
+    <!-- ETIKETT PANEL -->
+    <div id="panel-etikett" style="display:none;">
+        <div class="container">
+
+            <!-- Vänster: Innehåll -->
+            <div class="card">
+                <h2>Etikettinnehåll</h2>
+
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px;">
+                        <input type="checkbox" id="lblChkCompany" onchange="renderLabel()" style="width:auto;" checked>
+                        <span style="font-weight:600;">Företagsinfo</span>
+                    </label>
+                    <input type="text" id="lblCompanyName" placeholder="Hämtas från inställningar..." readonly style="color:var(--text-muted);">
+                </div>
+
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:0;">
+                        <input type="checkbox" id="lblChkDate" onchange="renderLabel()" style="width:auto;" checked>
+                        <span style="font-weight:600;">Datum</span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px;">
+                        <input type="checkbox" id="lblChkOrderRef" onchange="toggleLblField('lblOrderRefFields');renderLabel();" style="width:auto;">
+                        <span style="font-weight:600;">Produktnr / Ordernummer</span>
+                    </label>
+                    <div id="lblOrderRefFields" style="display:none;">
+                        <input type="text" id="lblOrderRef" placeholder="t.ex. 12345" oninput="renderLabel()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px;">
+                        <input type="checkbox" id="lblChkText" onchange="toggleLblField('lblTextFields');renderLabel();" style="width:auto;">
+                        <span style="font-weight:600;">Fritext</span>
+                    </label>
+                    <div id="lblTextFields" style="display:none;">
+                        <textarea id="lblFritext" rows="3" maxlength="80" placeholder="Skriv valfri text..." oninput="renderLabel();" style="resize:vertical;"></textarea>
+                        <div id="fritextCount" style="font-size:0.78rem; color:var(--text-muted); text-align:right; margin-top:3px;">80 tecken kvar</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px;">
+                        <input type="checkbox" id="lblChkQr" onchange="toggleLblField('lblQrFields');renderLabel();" style="width:auto;">
+                        <span style="font-weight:600;">QR-kod</span>
+                    </label>
+                    <div id="lblQrFields" style="display:none;">
+                        <input type="url" id="lblQrUrl" placeholder="https://..." oninput="renderLabel()">
+                        <button class="btn-primary" style="margin-top:6px;" onclick="document.getElementById('lblQrUrl').value=''; renderLabel();">Rensa</button>
+                    </div>
+                </div>
+
+                <div style="flex:1;"></div>
+
+                <div style="display:flex;gap:10px;margin-top:12px;">
+                    <button class="btn-primary" style="flex:1;" onclick="printLabelBrother()">Skriv ut (Brother)</button>
+                    <button class="btn-primary" style="flex:1;" onclick="exportLabelPng()">Exportera PNG</button>
+                </div>
+            </div>
+
+            <!-- Höger: Preview -->
+            <div class="card" style="align-items:center;">
+                <h2 style="align-self:flex-start; width:100%;">Förhandsgranskning</h2>
+                <div style="flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+                    <canvas id="labelCanvas" style="max-width:100%;border:2px solid var(--border-color);border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.15);"></canvas>
+                    <p id="lblDimText" style="font-size:0.85rem;color:var(--text-muted);margin:0;"></p>
+                    <div id="lblHistorySection" style="width:100%;flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;border-top:1px solid var(--border-color);padding-top:10px;margin-top:10px;">
+                        <p style="font-size:0.85rem;font-weight:600;color:var(--text-muted);margin-bottom:8px;">Historik</p>
+                        <div id="lblHistoryList"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div><!-- end panel-etikett -->
 
     <div class="toast-container" id="toastContainer"></div>
 
@@ -1262,6 +1343,9 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
             showToast('Inställningar sparade');
             applyTestModeBorder(isTest);
             settingsDirty = false;
+            // Uppdatera Etikett-fliken om företagsnamnet ändrades
+            const lblField = document.getElementById('lblCompanyName');
+            if (lblField) { lblField.value = senderVal; renderLabel(); }
             document.getElementById('settingsModalOverlay').classList.remove('active');
         }
         
@@ -1347,7 +1431,9 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
             document.querySelector(`.main-nav-tab[onclick="switchMainTab('${tab}')"]`).classList.add('active');
             document.getElementById('panel-sms').style.display = tab === 'sms' ? '' : 'none';
             document.getElementById('panel-priser').style.display = tab === 'priser' ? '' : 'none';
+            document.getElementById('panel-etikett').style.display = tab === 'etikett' ? '' : 'none';
             if (tab === 'priser') { loadSuppliers(); }
+            if (tab === 'etikett') { loadLabelSettings(); }
         }
 
         function switchPriserTab(tabId) {
@@ -1511,6 +1597,314 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
                 await fetch(`/api/suppliers/${id}`, { method: 'DELETE' });
                 showToast('Leverantör raderad'); loadSuppliers();
             });
+        }
+
+        // --- Etikett ---
+        const LABEL_SIZES_MM = {
+            '17x54':  { w: 54,  h: 17,  label: '17 × 54 mm',  px: [566, 165] },
+            '29x90':  { w: 90,  h: 29,  label: '29 × 90 mm',  px: [991, 306] },
+            '39x90':  { w: 90,  h: 39,  label: '39 × 90 mm',  px: [991, 413] },
+            '62x29':  { w: 62,  h: 29,  label: '62 × 29 mm',  px: [696, 271] },
+            '62x100': { w: 62,  h: 100, label: '62 × 100 mm', px: [1109, 696] }
+        };
+        let lblSizeKey = '17x54';
+
+        function wrapTextToLines(ctx, text, maxWidth) {
+            const lines = [];
+            let current = '';
+            for (const word of text.split(' ')) {
+                if (ctx.measureText(word).width > maxWidth) {
+                    if (current) { lines.push(current); current = ''; }
+                    let charLine = '';
+                    for (const ch of word) {
+                        if (ctx.measureText(charLine + ch).width > maxWidth && charLine) {
+                            lines.push(charLine);
+                            charLine = ch;
+                        } else {
+                            charLine += ch;
+                        }
+                    }
+                    current = charLine;
+                } else {
+                    const test = current ? current + ' ' + word : word;
+                    if (ctx.measureText(test).width > maxWidth && current) {
+                        lines.push(current);
+                        current = word;
+                    } else {
+                        current = test;
+                    }
+                }
+            }
+            if (current) lines.push(current);
+            return lines.length ? lines : [''];
+        }
+
+        function updateFritextCount() {
+            const el = document.getElementById('lblFritext');
+            const counter = document.getElementById('fritextCount');
+            if (!el || !counter) return;
+            const left = Math.max(0, el.maxLength - el.value.length);
+            counter.textContent = left + ' tecken kvar';
+            counter.style.color = left <= 10 ? '#ef4444' : 'var(--text-muted)';
+        }
+
+        function toggleLblField(id) {
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === 'none' ? '' : 'none';
+        }
+
+        function saveLabelState() {
+            localStorage.setItem('lblState', JSON.stringify({
+                chkCompany:  document.getElementById('lblChkCompany').checked,
+                chkDate:     document.getElementById('lblChkDate').checked,
+                chkOrderRef: document.getElementById('lblChkOrderRef').checked,
+                chkText:     document.getElementById('lblChkText').checked,
+                chkQr:       document.getElementById('lblChkQr').checked,
+            }));
+        }
+
+        function restoreLabelState() {
+            try {
+                const s = JSON.parse(localStorage.getItem('lblState'));
+                if (!s) return;
+                document.getElementById('lblChkCompany').checked  = s.chkCompany  ?? true;
+                document.getElementById('lblChkDate').checked     = s.chkDate     ?? true;
+                document.getElementById('lblChkOrderRef').checked = s.chkOrderRef ?? false;
+                document.getElementById('lblChkText').checked     = s.chkText     ?? false;
+                document.getElementById('lblChkQr').checked       = s.chkQr       ?? false;
+                document.getElementById('lblOrderRefFields').style.display = s.chkOrderRef ? '' : 'none';
+                document.getElementById('lblTextFields').style.display     = s.chkText     ? '' : 'none';
+                document.getElementById('lblQrFields').style.display       = s.chkQr       ? '' : 'none';
+            } catch(e) {}
+        }
+
+        function saveLabelHistory() {
+            const entry = {
+                ts:         new Date().toISOString(),
+                company:    document.getElementById('lblCompanyName').value,
+                chkCompany: document.getElementById('lblChkCompany').checked,
+                chkDate:    document.getElementById('lblChkDate').checked,
+                chkOrderRef:document.getElementById('lblChkOrderRef').checked,
+                orderRef:   document.getElementById('lblOrderRef').value.trim(),
+                chkText:    document.getElementById('lblChkText').checked,
+                fritext:    document.getElementById('lblFritext').value,
+                chkQr:      document.getElementById('lblChkQr').checked,
+                qrUrl:      document.getElementById('lblQrUrl').value.trim(),
+            };
+            const hist = JSON.parse(localStorage.getItem('lblHistory') || '[]');
+            hist.unshift(entry);
+            if (hist.length > 20) hist.length = 20;
+            localStorage.setItem('lblHistory', JSON.stringify(hist));
+            renderLabelHistory();
+        }
+
+        function renderLabelHistory() {
+            const list = document.getElementById('lblHistoryList');
+            if (!list) return;
+            const hist = JSON.parse(localStorage.getItem('lblHistory') || '[]');
+            if (hist.length === 0) {
+                list.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);">Ingen historik ännu.</p>';
+                return;
+            }
+            list.innerHTML = '';
+            hist.forEach((e, i) => {
+                const d = new Date(e.ts);
+                const dateStr = d.toLocaleDateString('sv-SE') + ' ' + d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+                const parts = [];
+                if (e.chkCompany && e.company) parts.push(e.company);
+                if (e.chkOrderRef && e.orderRef) parts.push('Nr: ' + e.orderRef);
+                if (e.chkText && e.fritext) parts.push('"' + e.fritext.split('\n')[0].slice(0, 20) + '"');
+                if (e.chkQr && e.qrUrl) parts.push('QR');
+                const desc = parts.join(' · ') || '—';
+                const row = document.createElement('div');
+                row.className = 'mgmt-list-item';
+                row.style.cursor = 'pointer';
+                row.innerHTML = `<div class="item-info"><div style="font-size:0.8rem;color:var(--text-muted);">${dateStr}</div><div style="font-size:0.875rem;font-weight:500;">${desc}</div></div>`;
+                row.onclick = () => recallLabelHistory(i);
+                list.appendChild(row);
+            });
+        }
+
+        function recallLabelHistory(i) {
+            const hist = JSON.parse(localStorage.getItem('lblHistory') || '[]');
+            const e = hist[i];
+            if (!e) return;
+            document.getElementById('lblChkCompany').checked  = e.chkCompany;
+            document.getElementById('lblChkDate').checked     = e.chkDate;
+            document.getElementById('lblChkOrderRef').checked = e.chkOrderRef;
+            document.getElementById('lblOrderRef').value      = e.orderRef || '';
+            document.getElementById('lblChkText').checked     = e.chkText;
+            document.getElementById('lblFritext').value       = e.fritext || '';
+            document.getElementById('lblChkQr').checked       = e.chkQr;
+            document.getElementById('lblQrUrl').value         = e.qrUrl || '';
+            document.getElementById('lblOrderRefFields').style.display = e.chkOrderRef ? '' : 'none';
+            document.getElementById('lblTextFields').style.display     = e.chkText     ? '' : 'none';
+            document.getElementById('lblQrFields').style.display       = e.chkQr       ? '' : 'none';
+            renderLabel();
+        }
+
+        async function loadLabelSettings() {
+            const res = await fetch('/api/settings', { cache: 'no-store' });
+            if (res.status === 401) return checkAuth();
+            const data = await res.json();
+            lblSizeKey = data.brother_label_size || '17x54';
+            document.getElementById('lblCompanyName').value = data.elks_sender || '';
+            restoreLabelState();
+            renderLabel();
+            renderLabelHistory();
+        }
+
+        function renderLabel() {
+            const canvas = document.getElementById('labelCanvas');
+            const ctx = canvas.getContext('2d');
+            const size = LABEL_SIZES_MM[lblSizeKey] || LABEL_SIZES_MM['17x54'];
+            document.getElementById('lblDimText').textContent = size.label;
+
+            const card = canvas.closest('.card');
+            const maxW = (card ? card.clientWidth : 400) - 48;
+            const scale = maxW / size.w;
+            canvas.width  = Math.round(size.w * scale);
+            canvas.height = Math.round(size.h * scale);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const showCompany  = document.getElementById('lblChkCompany').checked;
+            const showDate     = document.getElementById('lblChkDate').checked;
+            const showOrderRef = document.getElementById('lblChkOrderRef').checked;
+            const showText     = document.getElementById('lblChkText').checked;
+            const showQr       = document.getElementById('lblChkQr').checked;
+
+            const pad   = Math.max(6, Math.round(canvas.height * 0.08));
+            const qrSz  = showQr ? Math.min(canvas.height - pad * 2, Math.round(canvas.width * 0.28)) : 0;
+            const textW = canvas.width - pad * 2 - (qrSz > 0 ? qrSz + pad : 0);
+
+            const bigH   = Math.max(11, Math.round(canvas.height * 0.22));
+            const smallH = Math.max(9,  Math.round(canvas.height * 0.16));
+
+            ctx.fillStyle = '#000000';
+            let y = pad;
+
+            if (showCompany) {
+                const name = document.getElementById('lblCompanyName').value;
+                if (name) {
+                    ctx.font = `700 ${bigH}px Inter, Arial, sans-serif`;
+                    ctx.fillText(name, pad, y + bigH, textW);
+                    y += bigH + Math.round(bigH * 0.25);
+                }
+            }
+
+            if (showDate) {
+                const dateStr = new Date().toLocaleDateString('sv-SE');
+                ctx.font = `${smallH}px Inter, Arial, sans-serif`;
+                ctx.fillText(dateStr, pad, y + smallH, textW);
+                y += smallH + Math.round(smallH * 0.25);
+            }
+
+            if (showOrderRef) {
+                const ref = document.getElementById('lblOrderRef').value.trim();
+                if (ref) {
+                    ctx.font = `${smallH}px Inter, Arial, sans-serif`;
+                    ctx.fillText('Nr: ' + ref, pad, y + smallH, textW);
+                    y += smallH + Math.round(smallH * 0.25);
+                }
+            }
+
+            if (showText) {
+                ctx.font = `${smallH}px Inter, Arial, sans-serif`;
+
+                const lineStep = smallH + Math.round(smallH * 0.1);
+                const remainingH = canvas.height - y - pad;
+                let maxLines = 0;
+                let testY = y;
+                while (testY + smallH <= canvas.height - 2) { testY += lineStep; maxLines++; }
+                maxLines = Math.max(1, maxLines);
+
+                const fritextEl = document.getElementById('lblFritext');
+                const currentText = fritextEl ? fritextEl.value : '';
+
+                // Räkna faktiska wrappade rader från nuvarande text
+                let usedLines = 0;
+                const allWrapped = [];
+                if (currentText.length > 0) {
+                    for (const inputLine of currentText.split('\n')) {
+                        const w = wrapTextToLines(ctx, inputLine, textW);
+                        usedLines += w.length;
+                        allWrapped.push(...w);
+                    }
+                }
+
+                // Sätt maxLength
+                if (fritextEl) {
+                    const avgCharW = ctx.measureText('ABCDEFGHIJabcdefghij0123456789 ').width / 31;
+                    const charsPerLine = Math.max(5, Math.floor(textW / avgCharW * 0.85));
+                    if (usedLines < maxLines) {
+                        // Fler rader ryms – lägg till kapacitet för kvarvarande rader
+                        fritextEl.maxLength = currentText.length + (maxLines - usedLines) * charsPerLine;
+                    } else {
+                        // Alla rader fyllda – kolla hur mycket plats finns kvar på sista raden
+                        const lastLine = allWrapped.length > 0 ? allWrapped[allWrapped.length - 1] : '';
+                        const remW = Math.max(0, textW - ctx.measureText(lastLine).width);
+                        fritextEl.maxLength = currentText.length + Math.floor(remW / avgCharW);
+                    }
+                    if (fritextEl.value.length > fritextEl.maxLength)
+                        fritextEl.value = fritextEl.value.slice(0, fritextEl.maxLength);
+                }
+                updateFritextCount();
+
+                // Rita de rader som faktiskt ryms
+                let drawnLines = 0;
+                for (const line of allWrapped) {
+                    if (drawnLines >= maxLines) break;
+                    ctx.fillText(line, pad, y + smallH);
+                    y += lineStep;
+                    drawnLines++;
+                }
+            }
+
+            if (showQr && qrSz > 0) {
+                const url = document.getElementById('lblQrUrl').value.trim();
+                if (url) {
+                    try {
+                        const qrCanvas = document.createElement('canvas');
+                        new QRious({ element: qrCanvas, value: url, size: qrSz * 2, background: 'white', foreground: 'black' });
+                        ctx.drawImage(qrCanvas, canvas.width - pad - qrSz, pad, qrSz, qrSz);
+                    } catch (e) {
+                        ctx.strokeStyle = '#aaaaaa';
+                        ctx.strokeRect(canvas.width - pad - qrSz, pad, qrSz, qrSz);
+                    }
+                }
+            }
+
+            updateFritextCount();
+            saveLabelState();
+        }
+
+        function exportLabelPng() {
+            const canvas = document.getElementById('labelCanvas');
+            const link = document.createElement('a');
+            link.download = 'etikett.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            saveLabelHistory();
+        }
+
+        async function printLabelBrother() {
+            const canvas = document.getElementById('labelCanvas');
+            const imageData = canvas.toDataURL('image/png').split(',')[1];
+            try {
+                const res = await fetch('/api/print-custom-label', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData, label_size: lblSizeKey })
+                });
+                if (res.status === 401) return checkAuth();
+                const data = await res.json();
+                if (data.success) { showToast('Etikett skickad till skrivaren!', 'success'); saveLabelHistory(); }
+                else showToast('Utskrift misslyckades: ' + (data.error || ''), 'error');
+            } catch (e) {
+                showToast('Fel vid utskrift: ' + e.message, 'error');
+            }
         }
 
         // --- Toasts ---
