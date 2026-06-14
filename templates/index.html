@@ -462,6 +462,12 @@
                     <div class="calc-breakdown-row">
                         <span>Vinst</span><span id="rVinst">—</span>
                     </div>
+                    <div class="calc-breakdown-row" id="rRabattBesparingRow" style="display:none;">
+                        <span>Varav rabattbesparing</span><span id="rRabattBesparing">—</span>
+                    </div>
+                    <div class="calc-breakdown-row" id="rTotalVinstRow" style="display:none; font-weight:600;">
+                        <span>Total vinst</span><span id="rTotalVinst">—</span>
+                    </div>
                     <div class="calc-breakdown-row total">
                         <span>Marginal</span><span id="rMarginal">—</span>
                     </div>
@@ -1485,6 +1491,8 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
 
             if (!hasInpris) {
                 document.getElementById('rVinst').textContent = '—';
+                document.getElementById('rRabattBesparingRow').style.display = 'none';
+                document.getElementById('rTotalVinstRow').style.display = 'none';
                 document.getElementById('rMarginal').textContent = '—';
                 document.getElementById('rMoms').textContent = '—';
                 document.getElementById('calcUtpris').textContent = '—';
@@ -1495,8 +1503,8 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
             if (calcLastEdited === 'marginal') {
                 const m = parseFloat(document.getElementById('calcMarginal').value);
                 if (!isNaN(m) && m >= 0 && m < 100) {
-                    goodsPrice = netto / (1 - m / 100);
-                    vinst = goodsPrice - netto;
+                    goodsPrice = inpris / (1 - m / 100);
+                    vinst = goodsPrice - inpris;
                     marginalPct = m;
                     document.getElementById('calcVinst').value = vinst.toFixed(2);
                 }
@@ -1504,8 +1512,8 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
                 const v = parseFloat(document.getElementById('calcVinst').value);
                 if (!isNaN(v) && v >= 0) {
                     vinst = v;
-                    goodsPrice = netto + v;
-                    marginalPct = goodsPrice > 0 ? (1 - netto / goodsPrice) * 100 : 0;
+                    goodsPrice = inpris + v;
+                    marginalPct = goodsPrice > 0 ? (1 - inpris / goodsPrice) * 100 : 0;
                     document.getElementById('calcMarginal').value = marginalPct.toFixed(1);
                 }
             }
@@ -1513,12 +1521,20 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
             if (goodsPrice !== undefined) {
                 const totalExMoms = goodsPrice + frakt_per_vara;
                 const moms = totalExMoms * 0.25;
+                const rabattBesparing = inpris * discount / 100;
+                const totalVinst = vinst + rabattBesparing;
                 document.getElementById('rVinst').textContent = formatKr(vinst);
+                document.getElementById('rRabattBesparingRow').style.display = discount > 0 ? '' : 'none';
+                document.getElementById('rRabattBesparing').textContent = formatKr(rabattBesparing);
+                document.getElementById('rTotalVinstRow').style.display = discount > 0 ? '' : 'none';
+                document.getElementById('rTotalVinst').textContent = formatKr(totalVinst);
                 document.getElementById('rMarginal').textContent = marginalPct.toFixed(1) + ' %';
                 document.getElementById('rMoms').textContent = formatKr(moms);
                 document.getElementById('calcUtpris').textContent = formatKr(totalExMoms * 1.25);
             } else {
                 document.getElementById('rVinst').textContent = '—';
+                document.getElementById('rRabattBesparingRow').style.display = 'none';
+                document.getElementById('rTotalVinstRow').style.display = 'none';
                 document.getElementById('rMarginal').textContent = '—';
                 document.getElementById('rMoms').textContent = '—';
                 document.getElementById('calcUtpris').textContent = '—';
