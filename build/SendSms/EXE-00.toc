@@ -1,0 +1,667 @@
+('C:\\Users\\denni\\Desktop\\Egna appar\\SendSms\\dist\\SendSMS.exe',
+ True,
+ False,
+ False,
+ 'C:\\Users\\denni\\Desktop\\Egna '
+ 'appar\\SendSms\\venv\\Lib\\site-packages\\PyInstaller\\bootloader\\images\\icon-console.ico',
+ None,
+ False,
+ False,
+ b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<assembly xmlns='
+ b'"urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">\n  <trustInfo x'
+ b'mlns="urn:schemas-microsoft-com:asm.v3">\n    <security>\n      <requested'
+ b'Privileges>\n        <requestedExecutionLevel level="asInvoker" uiAccess='
+ b'"false"/>\n      </requestedPrivileges>\n    </security>\n  </trustInfo>\n  '
+ b'<compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">\n    <'
+ b'application>\n      <supportedOS Id="{e2011457-1546-43c5-a5fe-008deee3d3f'
+ b'0}"/>\n      <supportedOS Id="{35138b9a-5d96-4fbd-8e2d-a2440225f93a}"/>\n '
+ b'     <supportedOS Id="{4a2f28e3-53b9-4441-ba9c-d69d4a4a6e38}"/>\n      <s'
+ b'upportedOS Id="{1f676c76-80e1-4239-95bb-83d0f6d0da78}"/>\n      <supporte'
+ b'dOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>\n    </application>\n  <'
+ b'/compatibility>\n  <application xmlns="urn:schemas-microsoft-com:asm.v3">'
+ b'\n    <windowsSettings>\n      <longPathAware xmlns="http://schemas.micros'
+ b'oft.com/SMI/2016/WindowsSettings">true</longPathAware>\n    </windowsSett'
+ b'ings>\n  </application>\n  <dependency>\n    <dependentAssembly>\n      <ass'
+ b'emblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version='
+ b'"6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" langua'
+ b'ge="*"/>\n    </dependentAssembly>\n  </dependency>\n</assembly>',
+ True,
+ False,
+ None,
+ None,
+ None,
+ 'C:\\Users\\denni\\Desktop\\Egna appar\\SendSms\\build\\SendSms\\SendSMS.pkg',
+ [('pyi-contents-directory _internal', '', 'OPTION'),
+  ('PYZ-00.pyz',
+   'C:\\Users\\denni\\Desktop\\Egna appar\\SendSms\\build\\SendSms\\PYZ-00.pyz',
+   'PYZ'),
+  ('struct',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\build\\SendSms\\localpycs\\struct.pyc',
+   'PYMODULE'),
+  ('pyimod01_archive',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\build\\SendSms\\localpycs\\pyimod01_archive.pyc',
+   'PYMODULE'),
+  ('pyimod02_importers',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\build\\SendSms\\localpycs\\pyimod02_importers.pyc',
+   'PYMODULE'),
+  ('pyimod03_ctypes',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\build\\SendSms\\localpycs\\pyimod03_ctypes.pyc',
+   'PYMODULE'),
+  ('pyimod04_pywin32',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\build\\SendSms\\localpycs\\pyimod04_pywin32.pyc',
+   'PYMODULE'),
+  ('pyiboot01_bootstrap',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PyInstaller\\loader\\pyiboot01_bootstrap.py',
+   'PYSOURCE'),
+  ('pyi_rth_inspect',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_inspect.py',
+   'PYSOURCE'),
+  ('pyi_rth_multiprocessing',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_multiprocessing.py',
+   'PYSOURCE'),
+  ('pyi_rth_pkgutil',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_pkgutil.py',
+   'PYSOURCE'),
+  ('pyi_rth_pywintypes',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\rthooks\\pyi_rth_pywintypes.py',
+   'PYSOURCE'),
+  ('pyi_rth_usb',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\rthooks\\pyi_rth_usb.py',
+   'PYSOURCE'),
+  ('pyi_rth_setuptools',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_setuptools.py',
+   'PYSOURCE'),
+  ('app', 'C:\\Users\\denni\\Desktop\\Egna appar\\SendSms\\app.py', 'PYSOURCE'),
+  ('pywin32_system32\\pythoncom314.dll',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\pywin32_system32\\pythoncom314.dll',
+   'BINARY'),
+  ('pywin32_system32\\pywintypes314.dll',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\pywin32_system32\\pywintypes314.dll',
+   'BINARY'),
+  ('python314.dll',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\python314.dll',
+   'BINARY'),
+  ('_zstd.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_zstd.pyd',
+   'EXTENSION'),
+  ('_lzma.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_lzma.pyd',
+   'EXTENSION'),
+  ('_bz2.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_bz2.pyd',
+   'EXTENSION'),
+  ('_decimal.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_decimal.pyd',
+   'EXTENSION'),
+  ('_hashlib.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_hashlib.pyd',
+   'EXTENSION'),
+  ('unicodedata.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\unicodedata.pyd',
+   'EXTENSION'),
+  ('_ssl.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_ssl.pyd',
+   'EXTENSION'),
+  ('select.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\select.pyd',
+   'EXTENSION'),
+  ('_overlapped.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_overlapped.pyd',
+   'EXTENSION'),
+  ('_asyncio.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_asyncio.pyd',
+   'EXTENSION'),
+  ('_queue.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_queue.pyd',
+   'EXTENSION'),
+  ('_ctypes.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_ctypes.pyd',
+   'EXTENSION'),
+  ('_multiprocessing.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_multiprocessing.pyd',
+   'EXTENSION'),
+  ('pyexpat.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\pyexpat.pyd',
+   'EXTENSION'),
+  ('_wmi.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_wmi.pyd',
+   'EXTENSION'),
+  ('win32\\win32gui.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32gui.pyd',
+   'EXTENSION'),
+  ('win32\\win32console.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32console.pyd',
+   'EXTENSION'),
+  ('win32\\win32wnet.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32wnet.pyd',
+   'EXTENSION'),
+  ('win32\\win32ts.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32ts.pyd',
+   'EXTENSION'),
+  ('win32\\win32transaction.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32transaction.pyd',
+   'EXTENSION'),
+  ('win32\\win32trace.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32trace.pyd',
+   'EXTENSION'),
+  ('win32\\win32service.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32service.pyd',
+   'EXTENSION'),
+  ('win32\\win32security.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32security.pyd',
+   'EXTENSION'),
+  ('win32\\win32ras.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32ras.pyd',
+   'EXTENSION'),
+  ('win32\\win32profile.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32profile.pyd',
+   'EXTENSION'),
+  ('win32\\win32process.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32process.pyd',
+   'EXTENSION'),
+  ('win32\\win32print.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32print.pyd',
+   'EXTENSION'),
+  ('win32\\win32pipe.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32pipe.pyd',
+   'EXTENSION'),
+  ('win32\\win32pdh.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32pdh.pyd',
+   'EXTENSION'),
+  ('win32\\win32net.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32net.pyd',
+   'EXTENSION'),
+  ('win32\\win32lz.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32lz.pyd',
+   'EXTENSION'),
+  ('win32\\win32job.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32job.pyd',
+   'EXTENSION'),
+  ('win32\\win32inet.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32inet.pyd',
+   'EXTENSION'),
+  ('win32\\win32help.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32help.pyd',
+   'EXTENSION'),
+  ('win32\\win32file.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32file.pyd',
+   'EXTENSION'),
+  ('win32\\win32evtlog.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32evtlog.pyd',
+   'EXTENSION'),
+  ('win32\\win32event.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32event.pyd',
+   'EXTENSION'),
+  ('win32\\win32crypt.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32crypt.pyd',
+   'EXTENSION'),
+  ('win32\\win32cred.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32cred.pyd',
+   'EXTENSION'),
+  ('win32\\win32clipboard.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32clipboard.pyd',
+   'EXTENSION'),
+  ('win32\\win32api.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\win32api.pyd',
+   'EXTENSION'),
+  ('win32\\timer.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\timer.pyd',
+   'EXTENSION'),
+  ('win32\\servicemanager.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\servicemanager.pyd',
+   'EXTENSION'),
+  ('win32\\perfmon.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\perfmon.pyd',
+   'EXTENSION'),
+  ('win32\\odbc.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\odbc.pyd',
+   'EXTENSION'),
+  ('win32\\mmapfile.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\mmapfile.pyd',
+   'EXTENSION'),
+  ('win32\\_winxptheme.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\_winxptheme.pyd',
+   'EXTENSION'),
+  ('win32\\_win32sysloader.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\win32\\_win32sysloader.pyd',
+   'EXTENSION'),
+  ('_uuid.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_uuid.pyd',
+   'EXTENSION'),
+  ('markupsafe\\_speedups.cp314-win_amd64.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\markupsafe\\_speedups.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingft.cp314-win_amd64.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PIL\\_imagingft.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imaging.cp314-win_amd64.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PIL\\_imaging.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_webp.cp314-win_amd64.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PIL\\_webp.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingtk.cp314-win_amd64.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PIL\\_imagingtk.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_avif.cp314-win_amd64.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PIL\\_avif.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingcms.cp314-win_amd64.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PIL\\_imagingcms.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingmath.cp314-win_amd64.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PIL\\_imagingmath.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('_elementtree.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_elementtree.pyd',
+   'EXTENSION'),
+  ('_socket.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_socket.pyd',
+   'EXTENSION'),
+  ('81d243bd2c585b0f4821__mypyc.cp314-win_amd64.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\81d243bd2c585b0f4821__mypyc.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('charset_normalizer\\cd.cp314-win_amd64.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\charset_normalizer\\cd.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('charset_normalizer\\md.cp314-win_amd64.pyd',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\charset_normalizer\\md.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('_sqlite3.pyd',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\_sqlite3.pyd',
+   'EXTENSION'),
+  ('VCRUNTIME140_1.dll',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\VCRUNTIME140_1.dll',
+   'BINARY'),
+  ('VCRUNTIME140.dll',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\VCRUNTIME140.dll',
+   'BINARY'),
+  ('libcrypto-3.dll',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\libcrypto-3.dll',
+   'BINARY'),
+  ('libssl-3.dll',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\libssl-3.dll',
+   'BINARY'),
+  ('libffi-8.dll',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\libffi-8.dll',
+   'BINARY'),
+  ('sqlite3.dll',
+   'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\DLLs\\sqlite3.dll',
+   'BINARY'),
+  ('brother_ql-0.9.4.dist-info\\INSTALLER',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql-0.9.4.dist-info\\INSTALLER',
+   'DATA'),
+  ('brother_ql-0.9.4.dist-info\\METADATA',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql-0.9.4.dist-info\\METADATA',
+   'DATA'),
+  ('brother_ql-0.9.4.dist-info\\RECORD',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql-0.9.4.dist-info\\RECORD',
+   'DATA'),
+  ('brother_ql-0.9.4.dist-info\\REQUESTED',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql-0.9.4.dist-info\\REQUESTED',
+   'DATA'),
+  ('brother_ql-0.9.4.dist-info\\WHEEL',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql-0.9.4.dist-info\\WHEEL',
+   'DATA'),
+  ('brother_ql-0.9.4.dist-info\\entry_points.txt',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql-0.9.4.dist-info\\entry_points.txt',
+   'DATA'),
+  ('brother_ql-0.9.4.dist-info\\top_level.txt',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql-0.9.4.dist-info\\top_level.txt',
+   'DATA'),
+  ('brother_ql-0.9.4.dist-info\\zip-safe',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql-0.9.4.dist-info\\zip-safe',
+   'DATA'),
+  ('brother_ql\\__init__.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\__init__.py',
+   'DATA'),
+  ('brother_ql\\backends\\__init__.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\backends\\__init__.py',
+   'DATA'),
+  ('brother_ql\\backends\\generic.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\backends\\generic.py',
+   'DATA'),
+  ('brother_ql\\backends\\helpers.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\backends\\helpers.py',
+   'DATA'),
+  ('brother_ql\\backends\\linux_kernel.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\backends\\linux_kernel.py',
+   'DATA'),
+  ('brother_ql\\backends\\network.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\backends\\network.py',
+   'DATA'),
+  ('brother_ql\\backends\\pyusb.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\backends\\pyusb.py',
+   'DATA'),
+  ('brother_ql\\brother_ql_analyse.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\brother_ql_analyse.py',
+   'DATA'),
+  ('brother_ql\\brother_ql_create.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\brother_ql_create.py',
+   'DATA'),
+  ('brother_ql\\brother_ql_debug.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\brother_ql_debug.py',
+   'DATA'),
+  ('brother_ql\\brother_ql_info.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\brother_ql_info.py',
+   'DATA'),
+  ('brother_ql\\brother_ql_print.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\brother_ql_print.py',
+   'DATA'),
+  ('brother_ql\\cli.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\cli.py',
+   'DATA'),
+  ('brother_ql\\conversion.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\conversion.py',
+   'DATA'),
+  ('brother_ql\\devicedependent.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\devicedependent.py',
+   'DATA'),
+  ('brother_ql\\exceptions.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\exceptions.py',
+   'DATA'),
+  ('brother_ql\\helpers.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\helpers.py',
+   'DATA'),
+  ('brother_ql\\image_trafos.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\image_trafos.py',
+   'DATA'),
+  ('brother_ql\\labels.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\labels.py',
+   'DATA'),
+  ('brother_ql\\models.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\models.py',
+   'DATA'),
+  ('brother_ql\\output_helpers.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\output_helpers.py',
+   'DATA'),
+  ('brother_ql\\raster.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\raster.py',
+   'DATA'),
+  ('brother_ql\\reader.py',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\brother_ql\\reader.py',
+   'DATA'),
+  ('static\\logo-dark.png',
+   'C:\\Users\\denni\\Desktop\\Egna appar\\SendSms\\static\\logo-dark.png',
+   'DATA'),
+  ('static\\logo-light.png',
+   'C:\\Users\\denni\\Desktop\\Egna appar\\SendSms\\static\\logo-light.png',
+   'DATA'),
+  ('templates\\index.html',
+   'C:\\Users\\denni\\Desktop\\Egna appar\\SendSms\\templates\\index.html',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\licenses\\LICENSE',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\INSTALLER',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\INSTALLER',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\WHEEL',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\WHEEL',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\top_level.txt',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\top_level.txt',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\RECORD',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\RECORD',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\METADATA',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\METADATA',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\REQUESTED',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\REQUESTED',
+   'DATA'),
+  ('setuptools\\_vendor\\jaraco\\text\\Lorem ipsum.txt',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco\\text\\Lorem '
+   'ipsum.txt',
+   'DATA'),
+  ('certifi\\cacert.pem',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\certifi\\cacert.pem',
+   'DATA'),
+  ('certifi\\py.typed',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\certifi\\py.typed',
+   'DATA'),
+  ('itsdangerous-2.2.0.dist-info\\WHEEL',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\itsdangerous-2.2.0.dist-info\\WHEEL',
+   'DATA'),
+  ('flask-3.0.3.dist-info\\RECORD',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\flask-3.0.3.dist-info\\RECORD',
+   'DATA'),
+  ('markupsafe-3.0.3.dist-info\\licenses\\LICENSE.txt',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\markupsafe-3.0.3.dist-info\\licenses\\LICENSE.txt',
+   'DATA'),
+  ('markupsafe-3.0.3.dist-info\\INSTALLER',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\markupsafe-3.0.3.dist-info\\INSTALLER',
+   'DATA'),
+  ('flask-3.0.3.dist-info\\entry_points.txt',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\flask-3.0.3.dist-info\\entry_points.txt',
+   'DATA'),
+  ('markupsafe-3.0.3.dist-info\\RECORD',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\markupsafe-3.0.3.dist-info\\RECORD',
+   'DATA'),
+  ('flask-3.0.3.dist-info\\REQUESTED',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\flask-3.0.3.dist-info\\REQUESTED',
+   'DATA'),
+  ('markupsafe-3.0.3.dist-info\\METADATA',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\markupsafe-3.0.3.dist-info\\METADATA',
+   'DATA'),
+  ('click-8.4.0.dist-info\\WHEEL',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\click-8.4.0.dist-info\\WHEEL',
+   'DATA'),
+  ('markupsafe-3.0.3.dist-info\\WHEEL',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\markupsafe-3.0.3.dist-info\\WHEEL',
+   'DATA'),
+  ('click-8.4.0.dist-info\\INSTALLER',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\click-8.4.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('itsdangerous-2.2.0.dist-info\\LICENSE.txt',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\itsdangerous-2.2.0.dist-info\\LICENSE.txt',
+   'DATA'),
+  ('flask-3.0.3.dist-info\\METADATA',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\flask-3.0.3.dist-info\\METADATA',
+   'DATA'),
+  ('werkzeug-3.1.8.dist-info\\WHEEL',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\werkzeug-3.1.8.dist-info\\WHEEL',
+   'DATA'),
+  ('itsdangerous-2.2.0.dist-info\\INSTALLER',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\itsdangerous-2.2.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('markupsafe-3.0.3.dist-info\\top_level.txt',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\markupsafe-3.0.3.dist-info\\top_level.txt',
+   'DATA'),
+  ('flask-3.0.3.dist-info\\LICENSE.txt',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\flask-3.0.3.dist-info\\LICENSE.txt',
+   'DATA'),
+  ('click-8.4.0.dist-info\\licenses\\LICENSE.txt',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\click-8.4.0.dist-info\\licenses\\LICENSE.txt',
+   'DATA'),
+  ('attrs-26.1.0.dist-info\\licenses\\LICENSE',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\attrs-26.1.0.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('werkzeug-3.1.8.dist-info\\METADATA',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\werkzeug-3.1.8.dist-info\\METADATA',
+   'DATA'),
+  ('werkzeug-3.1.8.dist-info\\INSTALLER',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\werkzeug-3.1.8.dist-info\\INSTALLER',
+   'DATA'),
+  ('attrs-26.1.0.dist-info\\METADATA',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\attrs-26.1.0.dist-info\\METADATA',
+   'DATA'),
+  ('itsdangerous-2.2.0.dist-info\\RECORD',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\itsdangerous-2.2.0.dist-info\\RECORD',
+   'DATA'),
+  ('flask-3.0.3.dist-info\\WHEEL',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\flask-3.0.3.dist-info\\WHEEL',
+   'DATA'),
+  ('werkzeug-3.1.8.dist-info\\RECORD',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\werkzeug-3.1.8.dist-info\\RECORD',
+   'DATA'),
+  ('attrs-26.1.0.dist-info\\INSTALLER',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\attrs-26.1.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('werkzeug-3.1.8.dist-info\\licenses\\LICENSE.txt',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\werkzeug-3.1.8.dist-info\\licenses\\LICENSE.txt',
+   'DATA'),
+  ('click-8.4.0.dist-info\\RECORD',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\click-8.4.0.dist-info\\RECORD',
+   'DATA'),
+  ('itsdangerous-2.2.0.dist-info\\METADATA',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\itsdangerous-2.2.0.dist-info\\METADATA',
+   'DATA'),
+  ('attrs-26.1.0.dist-info\\WHEEL',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\attrs-26.1.0.dist-info\\WHEEL',
+   'DATA'),
+  ('flask-3.0.3.dist-info\\INSTALLER',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\flask-3.0.3.dist-info\\INSTALLER',
+   'DATA'),
+  ('attrs-26.1.0.dist-info\\RECORD',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\attrs-26.1.0.dist-info\\RECORD',
+   'DATA'),
+  ('click-8.4.0.dist-info\\METADATA',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\click-8.4.0.dist-info\\METADATA',
+   'DATA'),
+  ('base_library.zip',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\build\\SendSms\\base_library.zip',
+   'DATA')],
+ [],
+ False,
+ False,
+ 1782279287,
+ [('run.exe',
+   'C:\\Users\\denni\\Desktop\\Egna '
+   'appar\\SendSms\\venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\run.exe',
+   'EXECUTABLE')],
+ 'C:\\Users\\denni\\AppData\\Local\\Programs\\Python\\Python314\\python314.dll')

@@ -1,4 +1,5 @@
 import os
+import sys
 import re
 import time
 import secrets
@@ -12,6 +13,12 @@ import json
 import threading
 import logging
 import traceback
+
+# When running as a PyInstaller .exe, resources are in sys._MEIPASS
+if getattr(sys, 'frozen', False):
+    _BASE_DIR = sys._MEIPASS
+else:
+    _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # --- Setup Debug Logging ---
 debug_logger = logging.getLogger("BrotherPrint")
@@ -76,7 +83,11 @@ def get_or_create_secret_key():
     return key
 
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder=os.path.join(_BASE_DIR, 'templates'),
+    static_folder=os.path.join(_BASE_DIR, 'static'),
+)
 app.secret_key = os.environ.get("SECRET_KEY") or get_or_create_secret_key()
 
 
@@ -222,20 +233,19 @@ def print_brother_label(ip_address, model, label_size, phone_number, name, times
         
         try:
             from PIL import Image, ImageDraw, ImageFont
-            import win32print
         except ImportError as e:
-            debug_logger.error(f"Ett bibliotek (PIL eller win32print) saknas: {e}")
+            debug_logger.error(f"PIL (Pillow) saknas: {e}")
             return False, f"Bibliotek saknas: {e}"
 
         dimensions = {
-            '17x54': (566, 165),
-            '29x90': (991, 306),
-            '39x90': (991, 413),
-            '62x29': (696, 271),
+            '17x54':  (566, 165),
+            '29x90':  (991, 306),
+            '39x90':  (991, 413),
+            '62x29':  (698, 271),
             '62x100': (1109, 696)
         }
         canvas_size = dimensions.get(label_size, (566, 165))
-        
+
         img = Image.new('RGB', canvas_size, color='white')
         d = ImageDraw.Draw(img)
         
@@ -266,7 +276,14 @@ def print_brother_label(ip_address, model, label_size, phone_number, name, times
             if label_info:
                 d.text((20, y_offset + y_step), label_info, fill='black', font=font_large)
 
-        img = img.transpose(Image.ROTATE_90)
+        # Rotate 90° only for portrait labels (taller than wide in mm).
+        # Landscape labels like 62x29 must stay as-is — brother_ql expects landscape.
+        try:
+            lw, lh = int(label_size.split('x')[0]), int(label_size.split('x')[1])
+            if lh > lw:
+                img = img.transpose(Image.ROTATE_90)
+        except Exception:
+            img = img.transpose(Image.ROTATE_90)
         debug_logger.debug(f"Bild genererad framgångsrikt! (Storlek: {img.size})")
         
         try:
@@ -306,6 +323,11 @@ def print_brother_label(ip_address, model, label_size, phone_number, name, times
             debug_logger.info("Instruktioner skickade över nätverket!")
         else:
             debug_logger.info(f"Använder Windows win32print för skrivare: {printer_name}")
+            try:
+                import win32print
+            except ImportError as e:
+                debug_logger.error(f"win32print saknas (krävs för lokal USB-skrivare på Windows): {e}")
+                return False, "win32print saknas — ange skrivarens IP-adress istället för att skriva ut via nätverk"
             try:
                 hprinter = win32print.OpenPrinter(printer_name)
                 debug_logger.debug(f"Fick skrivar-handle: {hprinter}")
@@ -792,15 +814,23 @@ def print_custom_label():
     try:
         from PIL import Image
         dimensions = {
-            '17x54': (566, 165), '29x90': (991, 306), '39x90': (991, 413),
-            '62x29': (696, 271), '62x100': (1109, 696)
+            '17x54':  (566, 165),
+            '29x90':  (991, 306),
+            '39x90':  (991, 413),
+            '62x29':  (698, 271),
+            '62x100': (1109, 696)
         }
         target = dimensions.get(label_size, (566, 165))
 
         img_data = base64.b64decode(image_b64)
         img = Image.open(_io.BytesIO(img_data)).convert('RGB')
         img = img.resize(target, Image.LANCZOS)
-        img = img.transpose(Image.ROTATE_90)
+        try:
+            lw, lh = int(label_size.split('x')[0]), int(label_size.split('x')[1])
+            if lh > lw:
+                img = img.transpose(Image.ROTATE_90)
+        except Exception:
+            img = img.transpose(Image.ROTATE_90)
 
         from brother_ql.conversion import convert
         from brother_ql.raster import BrotherQLRaster
@@ -839,4 +869,9 @@ def print_custom_label():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    import webbrowser
+    def _open_browser():
+        time.sleep(1.5)
+        webbrowser.open('http://127.0.0.1:5000')
+    threading.Thread(target=_open_browser, daemon=True).start()
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)

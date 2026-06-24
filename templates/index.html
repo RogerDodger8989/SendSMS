@@ -65,7 +65,7 @@
         .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%; margin: 0 0 20px 0; flex-shrink: 0; }
         .header h1 { font-size: 1.5rem; color: var(--text-main); }
         .header-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        #appLogo { height: 100px; width: auto; max-width: 100%; object-fit: contain; }
+        #appLogo { height: 80px; width: auto; max-width: 100%; object-fit: contain; }
         
         .btn-icon { background: var(--card-bg); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; cursor: pointer; color: var(--text-main); transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
         .btn-icon:hover { background: var(--input-bg); transform: scale(1.05); }
@@ -209,13 +209,41 @@
         /* Custom Checkbox */
         .pickup-cb { width: 20px; height: 20px; cursor: pointer; accent-color: var(--success-color); }
 
+        /* Touch: snabbare respons, ingen dubbelklick-zoom */
+        button, input, select, textarea, label {
+            touch-action: manipulation;
+        }
+
+        /* Compact layout for 1024×768 touch screens and similar */
+        @media (max-height: 820px) and (min-width: 769px) {
+            body { padding: 10px; }
+            .header { margin-bottom: 10px; gap: 8px; }
+            #appLogo { height: 50px !important; }
+            .main-nav-tab { padding: 8px 16px; font-size: 0.95rem; }
+            .container { gap: 12px; }
+            .card { padding: 12px; }
+            h2 { font-size: 1.05rem; margin-bottom: 7px; padding-bottom: 6px; }
+            .form-group { margin-bottom: 7px; }
+            input[type="text"], input[type="tel"], input[type="password"],
+            input[type="number"], input[type="url"], select { padding: 7px 10px; }
+            button.btn-primary { padding: 10px 14px; font-size: 0.95rem; }
+            button.btn-danger  { padding: 10px 14px; font-size: 0.95rem; }
+            button.btn-outline { padding: 10px 14px; font-size: 0.95rem; }
+            .btn-settings { padding: 8px 12px; }
+            .search-bar { margin-bottom: 10px; }
+            .char-counter { margin-top: 2px; font-size: 0.7rem; }
+            #balanceDisplay { font-size: 0.8rem; }
+            /* Print-label sektion: kompaktare */
+            .form-group[style*="margin-bottom: 24px"] { margin-bottom: 8px !important; padding: 8px !important; }
+        }
+
         /* Mobile adjustments */
         @media (max-width: 600px) {
             body { padding: 10px; overflow: auto; height: auto; }
             #panel-sms, #panel-priser, #panel-etikett { flex: none; }
             .container { grid-template-rows: auto; height: auto; }
             .card { overflow: visible; min-height: 300px; }
-            
+
             /* Header & Logo */
             .header { flex-direction: column; align-items: center; text-align: center; gap: 10px; margin-bottom: 14px; }
             #appLogo { height: 70px; max-width: 90%; }
@@ -274,7 +302,7 @@
     <!-- Main Content -->
     <div class="header">
         <div style="display: flex; align-items: center; gap: 20px;">
-            <img id="appLogo" src="/static/logo-light.png" style="height: 100px; width: auto;" alt="SendSms">
+            <img id="appLogo" src="/static/logo-light.png" alt="SendSms">
             <nav class="main-nav-tabs">
                 <button class="main-nav-tab active" onclick="switchMainTab('sms')">SMS</button>
                 <button class="main-nav-tab" onclick="switchMainTab('priser')">Priser</button>
