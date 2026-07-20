@@ -111,53 +111,50 @@ load_dotenv()
 _PROXY_ELKS_USERNAME = os.environ.get("ELKS_USERNAME", "")
 _PROXY_ELKS_PASSWORD = os.environ.get("ELKS_PASSWORD", "")
 _FOSSBILLING_URL = os.environ.get("FOSSBILLING_URL", "").rstrip("/")
-_FOSSBILLING_API_KEY = os.environ.get("FOSSBILLING_API_KEY", "")
 
 
 def _validate_fossbilling_license(license_key):
     """Returns (valid: bool, reason: str).
-    Calls the FOSSBilling admin API with Basic-auth (API_KEY:) to validate the license.
-    The endpoint /api/admin/servicelicense/check is provided by the ServiceLicense extension;
-    adjust FOSSBILLING_URL or the path below if your installation uses a different route."""
+    Calls FOSSBilling's built-in guest API (no auth required):
+      GET {FOSSBILLING_URL}/api/guest/service/license?license={key}
+    FOSSBilling wraps the response in {"result": {...}, "error": null}.
+    A license is considered valid when result is non-null and status == "active"."""
     if not _FOSSBILLING_URL:
         return False, "FOSSBILLING_URL inte konfigurerad på servern"
-    if not _FOSSBILLING_API_KEY:
-        return False, "FOSSBILLING_API_KEY inte konfigurerad på servern"
     if not license_key:
         return False, "Licensnyckel saknas"
 
-    import base64
-    encoded = base64.b64encode(f"{_FOSSBILLING_API_KEY}:".encode()).decode()
-    headers = {
-        "Authorization": f"Basic {encoded}",
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    }
-    url = f"{_FOSSBILLING_URL}/api/admin/servicelicense/check"
+    url = f"{_FOSSBILLING_URL}/api/guest/service/license"
     try:
-        resp = requests.post(url, json={"license": license_key}, headers=headers, timeout=10)
+        resp = requests.get(url, params={"license": license_key},
+                            headers={"Accept": "application/json"}, timeout=10)
     except requests.Timeout:
         return False, "Timeout vid kontakt med licensserver"
     except Exception as e:
         return False, f"Kunde inte nå licensservern: {e}"
 
-    if resp.status_code == 200:
-        try:
-            data = resp.json()
-        except Exception:
-            return False, "Ogiltigt svar från licensservern"
-        # FOSSBilling wraps results in {"result": ...}
-        result = data.get("result", data)
-        if result is True or (isinstance(result, dict) and result.get("valid")):
+    try:
+        data = resp.json()
+    except Exception:
+        return False, f"Ogiltigt svar från licensservern (HTTP {resp.status_code})"
+
+    # FOSSBilling guest API: {"result": {...} | null, "error": {"message": ...} | null}
+    result = data.get("result")
+    error  = data.get("error")
+
+    if result and isinstance(result, dict):
+        status = result.get("status", "")
+        if status == "active":
             return True, "OK"
-        if isinstance(result, dict):
-            msg = result.get("message") or result.get("reason") or "Licensen är inte aktiv"
-        else:
-            err = data.get("error", {})
-            msg = err.get("message", "Licensen är inte aktiv") if isinstance(err, dict) else "Licensen är inte aktiv"
-        return False, msg
-    if resp.status_code in (401, 403):
+        return False, f"Licensen är inte aktiv (status: {status or 'okänd'})"
+
+    if error and isinstance(error, dict):
+        return False, error.get("message", "Ogiltig licens")
+
+    # FOSSBilling may return HTTP 4xx directly for unknown keys
+    if resp.status_code in (401, 403, 404):
         return False, "Ogiltig eller utgången licens"
+
     return False, f"Licensserver svarade med HTTP {resp.status_code}"
 
 
@@ -1017,10 +1014,10 @@ def proxy_send_sms():
         license_key  (str, required) — active FOSSBilling license key
         to           (str, required) — recipient phone number (E.164 or Swedish local format)
         message      (str, required) — SMS text
-        from         (str, optional) — sender name/number (max 11 chars); falls back to "Butiken"
+        sender       (str, optional) — sender name/number (max 11 chars); falls back to "Butiken"
 
-    Validates the license against FOSSBilling, then forwards to 46elks using the
-    master credentials (ELKS_USERNAME / ELKS_PASSWORD env vars).
+    Validates the license against FOSSBilling's public guest API, then forwards to 46elks
+    using the master credentials (ELKS_USERNAME / ELKS_PASSWORD env vars).
     Returns the 46elks API response or an appropriate HTTP error.
     """
     data = request.get_json(silent=True) or {}
@@ -1028,7 +1025,7 @@ def proxy_send_sms():
     license_key = (data.get("license_key") or "").strip()
     to_number   = (data.get("to") or "").strip()
     message     = (data.get("message") or "").strip()
-    sender      = (data.get("from") or "Butiken").strip()[:11]
+    sender      = (data.get("sender") or "Butiken").strip()[:11]
 
     if not to_number or not message:
         return jsonify({"error": "Fälten 'to' och 'message' är obligatoriska"}), 400
