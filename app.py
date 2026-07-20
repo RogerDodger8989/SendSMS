@@ -107,6 +107,60 @@ def _get_label_dots(model_name, label_size_str):
 
 load_dotenv()
 
+# --- SMS Proxy: master credentials & FOSSBilling config (set in .env) ---
+_PROXY_ELKS_USERNAME = os.environ.get("ELKS_USERNAME", "")
+_PROXY_ELKS_PASSWORD = os.environ.get("ELKS_PASSWORD", "")
+_FOSSBILLING_URL = os.environ.get("FOSSBILLING_URL", "").rstrip("/")
+_FOSSBILLING_API_KEY = os.environ.get("FOSSBILLING_API_KEY", "")
+
+
+def _validate_fossbilling_license(license_key):
+    """Returns (valid: bool, reason: str).
+    Calls the FOSSBilling admin API with Basic-auth (API_KEY:) to validate the license.
+    The endpoint /api/admin/servicelicense/check is provided by the ServiceLicense extension;
+    adjust FOSSBILLING_URL or the path below if your installation uses a different route."""
+    if not _FOSSBILLING_URL:
+        return False, "FOSSBILLING_URL inte konfigurerad på servern"
+    if not _FOSSBILLING_API_KEY:
+        return False, "FOSSBILLING_API_KEY inte konfigurerad på servern"
+    if not license_key:
+        return False, "Licensnyckel saknas"
+
+    import base64
+    encoded = base64.b64encode(f"{_FOSSBILLING_API_KEY}:".encode()).decode()
+    headers = {
+        "Authorization": f"Basic {encoded}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    url = f"{_FOSSBILLING_URL}/api/admin/servicelicense/check"
+    try:
+        resp = requests.post(url, json={"license": license_key}, headers=headers, timeout=10)
+    except requests.Timeout:
+        return False, "Timeout vid kontakt med licensserver"
+    except Exception as e:
+        return False, f"Kunde inte nå licensservern: {e}"
+
+    if resp.status_code == 200:
+        try:
+            data = resp.json()
+        except Exception:
+            return False, "Ogiltigt svar från licensservern"
+        # FOSSBilling wraps results in {"result": ...}
+        result = data.get("result", data)
+        if result is True or (isinstance(result, dict) and result.get("valid")):
+            return True, "OK"
+        if isinstance(result, dict):
+            msg = result.get("message") or result.get("reason") or "Licensen är inte aktiv"
+        else:
+            err = data.get("error", {})
+            msg = err.get("message", "Licensen är inte aktiv") if isinstance(err, dict) else "Licensen är inte aktiv"
+        return False, msg
+    if resp.status_code in (401, 403):
+        return False, "Ogiltig eller utgången licens"
+    return False, f"Licensserver svarade med HTTP {resp.status_code}"
+
+
 # DB path: defaults to ./data (works locally and in Docker with WORKDIR /app)
 DB_DIR = os.environ.get("DB_DIR", "./data")
 DB_PATH = os.path.join(DB_DIR, "sms_logg.db")
@@ -474,7 +528,8 @@ def get_setting(key, default=""):
 
 @app.before_request
 def require_login():
-    if request.endpoint in ['index', 'auth_status', 'login', 'static']:
+    # proxy_send_sms has its own license-key authentication
+    if request.endpoint in ['index', 'auth_status', 'login', 'static', 'proxy_send_sms']:
         return
     app_pin = get_setting("app_pin", "")
     if app_pin and not session.get("logged_in"):
@@ -952,6 +1007,75 @@ def print_custom_label():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/v1/send-sms', methods=['POST'])
+def proxy_send_sms():
+    """Centralized SMS proxy endpoint.
+
+    Expects JSON:
+        license_key  (str, required) — active FOSSBilling license key
+        to           (str, required) — recipient phone number (E.164 or Swedish local format)
+        message      (str, required) — SMS text
+        from         (str, optional) — sender name/number (max 11 chars); falls back to "Butiken"
+
+    Validates the license against FOSSBilling, then forwards to 46elks using the
+    master credentials (ELKS_USERNAME / ELKS_PASSWORD env vars).
+    Returns the 46elks API response or an appropriate HTTP error.
+    """
+    data = request.get_json(silent=True) or {}
+
+    license_key = (data.get("license_key") or "").strip()
+    to_number   = (data.get("to") or "").strip()
+    message     = (data.get("message") or "").strip()
+    sender      = (data.get("from") or "Butiken").strip()[:11]
+
+    if not to_number or not message:
+        return jsonify({"error": "Fälten 'to' och 'message' är obligatoriska"}), 400
+
+    # --- License validation ---
+    valid, reason = _validate_fossbilling_license(license_key)
+    if not valid:
+        return jsonify({"error": f"Obehörig: {reason}"}), 401
+
+    # --- Master credentials check ---
+    if not _PROXY_ELKS_USERNAME or not _PROXY_ELKS_PASSWORD:
+        return jsonify({"error": "SMS-tjänsten är inte konfigurerad (saknar 46elks-uppgifter)"}), 503
+
+    sanitized = sanitize_phone_number(to_number)
+    try:
+        resp = requests.post(
+            "https://api.46elks.com/a1/sms",
+            data={"from": sender, "to": sanitized, "message": message},
+            auth=(_PROXY_ELKS_USERNAME, _PROXY_ELKS_PASSWORD),
+            timeout=15,
+        )
+    except requests.Timeout:
+        return jsonify({"error": "Timeout vid anrop till 46elks"}), 504
+    except Exception as e:
+        return jsonify({"error": f"SMS-sändning misslyckades: {e}"}), 502
+
+    try:
+        elks_data = resp.json()
+    except Exception:
+        elks_data = {"raw": resp.text}
+
+    if resp.status_code == 200:
+        # Log successful proxy send
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        try:
+            conn = get_db_connection()
+            conn.execute(
+                "INSERT INTO sms_log (phone_number, article, label_info, message, status, api_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (sanitized, "proxy", license_key[:12] + "...", message, elks_data.get("status", "created"), elks_data.get("id", ""), current_time)
+            )
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+        return jsonify(elks_data), 200
+
+    return jsonify({"error": f"46elks returnerade HTTP {resp.status_code}", "details": elks_data}), resp.status_code
 
 
 @app.route('/api/diagnostics', methods=['GET'])
