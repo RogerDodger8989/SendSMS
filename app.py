@@ -23,15 +23,87 @@ else:
 # --- Setup Debug Logging ---
 debug_logger = logging.getLogger("BrotherPrint")
 debug_logger.setLevel(logging.DEBUG)
+_log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'print_debug.log')
 try:
-    fh = logging.FileHandler('data/print_debug.log', encoding='utf-8')
+    os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+    fh = logging.FileHandler(_log_path, encoding='utf-8')
     fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     debug_logger.addHandler(fh)
 except:
     pass
 
+_versions_logged = False
+
+def _log_versions():
+    global _versions_logged
+    if _versions_logged:
+        return
+    _versions_logged = True
+    try:
+        import PIL
+        pil_ver = PIL.__version__
+    except Exception:
+        pil_ver = "EJ INSTALLERAD"
+    try:
+        import brother_ql
+        bql_ver = getattr(brother_ql, '__version__', None)
+        if not bql_ver:
+            import importlib.metadata
+            bql_ver = importlib.metadata.version('brother-ql')
+    except Exception:
+        bql_ver = "EJ INSTALLERAD"
+    debug_logger.info("=== SYSTEMINFORMATION ===")
+    debug_logger.info(f"Python:      {sys.version}")
+    debug_logger.info(f"PIL/Pillow:  {pil_ver}")
+    debug_logger.info(f"brother_ql: {bql_ver}")
+    debug_logger.info(f"OS:          {sys.platform}")
+    debug_logger.info("=========================")
+
 from dotenv import load_dotenv
 import socket
+
+# Cache: (model, label_size) → (width_px, height_px) expected by brother_ql
+_label_dots_cache = {}
+
+def _get_label_dots(model_name, label_size_str):
+    """Ask brother_ql what pixel dimensions it expects for this model+label.
+    Sends a 1×1 dummy image and parses the expected size from the ValueError.
+    This avoids hardcoded values that differ between printer models."""
+    cache_key = (model_name, label_size_str)
+    if cache_key in _label_dots_cache:
+        return _label_dots_cache[cache_key]
+
+    result = None
+    try:
+        from PIL import Image
+        from brother_ql.conversion import convert
+        from brother_ql.raster import BrotherQLRaster
+        qlr = BrotherQLRaster(model_name)
+        dummy = Image.new('RGB', (1, 1), color='white')
+        try:
+            convert(qlr=qlr, images=[dummy], label=label_size_str,
+                    rotate='auto', threshold=70, dither=False, compress=False,
+                    red=False, dpi_600=False, hq=True, align='center')
+        except ValueError as ve:
+            m = re.search(r'Expecting: \((\d+), (\d+)\)', str(ve))
+            if m:
+                result = (int(m.group(1)), int(m.group(2)))
+    except Exception:
+        pass
+
+    if result is None:
+        # Fallback hardcoded values
+        result = {
+            '17x54':  (566, 165),
+            '29x90':  (991, 306),
+            '39x90':  (991, 413),
+            '62x29':  (696, 271),
+            '62x100': (1109, 696),
+        }.get(label_size_str, (566, 165))
+
+    _label_dots_cache[cache_key] = result
+    debug_logger.info(f"Label-dimensioner för {model_name}+{label_size_str}: {result}")
+    return result
 
 load_dotenv()
 
@@ -209,57 +281,62 @@ def format_phone_for_print(phone):
 
 def print_brother_label(ip_address, model, label_size, phone_number, name, timestamp, label_info=""):
     try:
+        _log_versions()
         phone_number = format_phone_for_print(phone_number)
-        debug_logger.info(f"---- STARTAR UTSKRIFT ----")
-        debug_logger.info(f"Mottagen Info -> IP/Namn: {ip_address}, Modell: {model}, Storlek: {label_size}")
+        debug_logger.info("=" * 50)
+        debug_logger.info("STARTAR UTSKRIFT")
+        debug_logger.info(f"  Skrivare/IP:   '{ip_address}'")
+        debug_logger.info(f"  Modell:        '{model}'")
+        debug_logger.info(f"  Etikett:       '{label_size}'")
+        debug_logger.info(f"  Telefon:       '{phone_number}'")
+        debug_logger.info(f"  Namn:          '{name}'")
+        debug_logger.info(f"  Timestamp:     '{timestamp}'")
+        debug_logger.info(f"  Extra info:    '{label_info}'")
+
         if not ip_address or not model or not label_size:
-            debug_logger.error("Saknar IP, modell eller etikettstorlek!")
+            debug_logger.error("FEL: Saknar skrivare, modell eller etikettstorlek!")
             return False, "IP, modell eller etikett-storlek saknas"
-        
+
         date_str = timestamp.split(' ')[0] if timestamp else ""
         time_str = timestamp.split(' ')[1] if timestamp and ' ' in timestamp else ""
-        debug_logger.debug("Förbereder bild för utskrift...")
-        
+
         # Load font mappings
         try:
             with open('data/fonts.json', 'r', encoding='utf-8') as f:
                 font_settings = json.load(f)
+            debug_logger.debug("fonts.json laddad OK")
         except Exception as e:
-            debug_logger.error(f"Kunde inte ladda fonts.json: {e}")
+            debug_logger.warning(f"Kunde inte ladda fonts.json ({e}) — använder Arial")
             font_settings = {"family": "Arial", "sizes": {"title": 42, "body": 24, "footer": 18}}
-            
+
         font_family = font_settings.get("family", "Arial")
         font_sizes = font_settings.get("sizes", {"title": 42, "body": 24, "footer": 18})
-        
+
         try:
             from PIL import Image, ImageDraw, ImageFont
+            debug_logger.debug("PIL importerad OK")
         except ImportError as e:
             debug_logger.error(f"PIL (Pillow) saknas: {e}")
             return False, f"Bibliotek saknas: {e}"
 
-        dimensions = {
-            '17x54':  (566, 165),
-            '29x90':  (991, 306),
-            '39x90':  (991, 413),
-            '62x29':  (698, 271),
-            '62x100': (1109, 696)
-        }
-        canvas_size = dimensions.get(label_size, (566, 165))
+        canvas_size = _get_label_dots(model, label_size)
+        debug_logger.info(f"  Canvas (WxH):  {canvas_size[0]}x{canvas_size[1]} px (etikett '{label_size}', modell '{model}')")
 
         img = Image.new('RGB', canvas_size, color='white')
         d = ImageDraw.Draw(img)
-        
+
+        font_path = f"c:/Windows/Fonts/{font_family.lower()}.ttf"
         try:
             large_size = int(canvas_size[1] * 0.30)
             med_size = int(canvas_size[1] * 0.22)
-            font_path = f"c:/Windows/Fonts/{font_family.lower()}.ttf"
             font_large = ImageFont.truetype(font_path, large_size)
             font_medium = ImageFont.truetype(font_path, med_size)
+            debug_logger.debug(f"Font laddad: '{font_path}' (stor={large_size}pt, medium={med_size}pt)")
         except IOError:
-            debug_logger.warning("Kunde inte hitta vald font, använder standardfont.")
+            debug_logger.warning(f"Font '{font_path}' saknas — använder standardfont")
             font_large = ImageFont.load_default()
             font_medium = ImageFont.load_default()
-            
+
         if name:
             y_offset = int(canvas_size[1] * 0.05)
             y_step = int(canvas_size[1] * 0.32)
@@ -276,30 +353,33 @@ def print_brother_label(ip_address, model, label_size, phone_number, name, times
             if label_info:
                 d.text((20, y_offset + y_step), label_info, fill='black', font=font_large)
 
-        # Rotate 90° only for portrait labels (taller than wide in mm).
-        # Landscape labels like 62x29 must stay as-is — brother_ql expects landscape.
+        # Rotate 90° only for portrait labels (height > width in mm).
+        # Landscape labels like 62x29 stay as-is — brother_ql expects landscape.
         try:
-            lw, lh = int(label_size.split('x')[0]), int(label_size.split('x')[1])
-            if lh > lw:
-                img = img.transpose(Image.ROTATE_90)
+            lw_mm, lh_mm = int(label_size.split('x')[0]), int(label_size.split('x')[1])
+            should_rotate = lh_mm > lw_mm
         except Exception:
+            should_rotate = True
+        debug_logger.info(f"  Rotation:      {'JA (porträtt-etikett)' if should_rotate else 'NEJ (landskap-etikett)'}")
+        if should_rotate:
             img = img.transpose(Image.ROTATE_90)
-        debug_logger.debug(f"Bild genererad framgångsrikt! (Storlek: {img.size})")
-        
+        debug_logger.info(f"  Bildstorlek efter rotation: {img.size[0]}x{img.size[1]} px")
+
         try:
             from brother_ql.conversion import convert
             from brother_ql.raster import BrotherQLRaster
+            debug_logger.debug("brother_ql importerad OK")
         except ImportError as e:
-            debug_logger.error(f"Kunde inte importera brother_ql: {e}")
+            debug_logger.error(f"brother_ql saknas: {e}")
             return False, f"brother_ql saknas: {e}"
-        
-        debug_logger.debug("Konverterar till Brother-raster...")
+
+        debug_logger.info(f"  Konverterar till raster (modell={model}, label={label_size}, rotate='auto')...")
         qlr = BrotherQLRaster(model)
         instructions = convert(
             qlr=qlr,
             images=[img],
             label=label_size,
-            rotate='0',
+            rotate='auto',
             threshold=70,
             dither=False,
             compress=False,
@@ -308,52 +388,65 @@ def print_brother_label(ip_address, model, label_size, phone_number, name, times
             hq=True,
             align='center'
         )
-        debug_logger.debug(f"Raster-instruktioner klara (Storlek: {len(instructions)} bytes).")
-        
+        debug_logger.info(f"  Raster klart: {len(instructions)} bytes")
+
         printer_name = ip_address.strip()
         is_ip = ("." in printer_name and not printer_name.startswith("\\\\") and "brother" not in printer_name.lower()) or printer_name.startswith("tcp://")
-        
+        debug_logger.info(f"  Backend:       {'NÄTVERK (TCP/IP)' if is_ip else 'WINDOWS (win32print)'}")
+
         if is_ip:
-            debug_logger.info(f"Använder nätverksbackend för IP: {printer_name}")
+            debug_logger.info(f"  Skickar till nätverksskrivare: {printer_name}")
             from brother_ql.backends.helpers import send
             if not printer_name.startswith('tcp://'):
                 printer_name = f'tcp://{printer_name}'
-            debug_logger.debug("Skickar instruktioner över tcp...")
             send(instructions=instructions, printer_identifier=printer_name, backend_identifier='network', blocking=True)
-            debug_logger.info("Instruktioner skickade över nätverket!")
+            debug_logger.info("  Skickat via nätverk — KLART!")
         else:
-            debug_logger.info(f"Använder Windows win32print för skrivare: {printer_name}")
+            debug_logger.info(f"  Skickar via win32print till: '{printer_name}'")
             try:
                 import win32print
             except ImportError as e:
-                debug_logger.error(f"win32print saknas (krävs för lokal USB-skrivare på Windows): {e}")
-                return False, "win32print saknas — ange skrivarens IP-adress istället för att skriva ut via nätverk"
+                debug_logger.error(f"win32print saknas: {e}")
+                return False, "win32print saknas — ange skrivarens IP-adress istället"
+
+            # Logga alla tillgängliga Windows-skrivare för felsökning
+            try:
+                all_printers = [p[2] for p in win32print.EnumPrinters(
+                    win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)]
+                debug_logger.info(f"  Tillgängliga skrivare i Windows: {all_printers}")
+                if printer_name not in all_printers:
+                    debug_logger.warning(f"  VARNING: '{printer_name}' finns EJ i skrivarlistan ovan!")
+            except Exception as ep:
+                debug_logger.warning(f"  Kunde inte lista skrivare: {ep}")
+
             try:
                 hprinter = win32print.OpenPrinter(printer_name)
-                debug_logger.debug(f"Fick skrivar-handle: {hprinter}")
+                debug_logger.debug(f"  Skrivar-handle: {hprinter}")
             except Exception as e:
-                debug_logger.error(f"Kunde INTE öppna Windows-skrivaren '{printer_name}': {e}")
+                debug_logger.error(f"  KAN INTE ÖPPNA skrivaren '{printer_name}': {e}\n{traceback.format_exc()}")
                 return False, f"Hittade inte skrivaren '{printer_name}' i Windows"
-                
+
             try:
-                debug_logger.debug("Startar utskriftsjobb i Windows-kön...")
+                debug_logger.debug("  Startar utskriftsjobb (RAW)...")
                 win32print.StartDocPrinter(hprinter, 1, ("Etikett - SendSMS", None, "RAW"))
                 try:
                     win32print.StartPagePrinter(hprinter)
-                    win32print.WritePrinter(hprinter, instructions)
-                    debug_logger.debug("Rådata överförd till Windows-kön.")
+                    written = win32print.WritePrinter(hprinter, instructions)
+                    debug_logger.info(f"  WritePrinter: {written} bytes skrivna till kön")
                     win32print.EndPagePrinter(hprinter)
                 finally:
                     win32print.EndDocPrinter(hprinter)
-                    debug_logger.info("Utskriftsjobb avslutat och inlagt i kön!")
+                    debug_logger.info("  Utskriftsjobb inlagt i Windows-kön — KLART!")
             finally:
                 win32print.ClosePrinter(hprinter)
                 debug_logger.debug("Skrivar-handle stängd.")
         
-        debug_logger.info("---- UTSKRIFT KLAR ----")
+        debug_logger.info("UTSKRIFT KLAR")
+        debug_logger.info("=" * 50)
         return True, "Utskrift skickad"
     except Exception as e:
-        debug_logger.error(f"Kritiskt undantag i print_brother_label: {str(e)}\n{traceback.format_exc()}")
+        debug_logger.error(f"KRITISKT FEL i print_brother_label:\n{traceback.format_exc()}")
+        debug_logger.info("=" * 50)
         return False, str(e)
 
 
@@ -813,14 +906,7 @@ def print_custom_label():
 
     try:
         from PIL import Image
-        dimensions = {
-            '17x54':  (566, 165),
-            '29x90':  (991, 306),
-            '39x90':  (991, 413),
-            '62x29':  (698, 271),
-            '62x100': (1109, 696)
-        }
-        target = dimensions.get(label_size, (566, 165))
+        target = _get_label_dots(brother_model, label_size)
 
         img_data = base64.b64decode(image_b64)
         img = Image.open(_io.BytesIO(img_data)).convert('RGB')
@@ -863,6 +949,74 @@ def print_custom_label():
             finally:
                 win32print.ClosePrinter(hprinter)
 
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/diagnostics', methods=['GET'])
+def get_diagnostics():
+    import platform
+
+    # Library versions
+    try:
+        import PIL
+        pil_ver = PIL.__version__
+    except Exception:
+        pil_ver = "EJ INSTALLERAD"
+    try:
+        import brother_ql
+        bql_ver = getattr(brother_ql, '__version__', None)
+        if not bql_ver:
+            import importlib.metadata
+            bql_ver = importlib.metadata.version('brother-ql')
+    except Exception:
+        bql_ver = "EJ INSTALLERAD"
+
+    # Windows printers
+    printers = []
+    try:
+        import win32print
+        for p in win32print.EnumPrinters(
+                win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS):
+            printers.append(p[2])
+    except Exception as e:
+        printers = [f"(Kunde inte hämta skrivarlista: {e})"]
+
+    # Current printer settings
+    settings = {
+        "brother_enabled": get_setting("brother_enabled", "false"),
+        "brother_ip": get_setting("brother_ip", ""),
+        "brother_model": get_setting("brother_model", ""),
+        "brother_label_size": get_setting("brother_label_size", "17x54"),
+    }
+
+    # Last 200 lines of log
+    log_content = ""
+    try:
+        with open(_log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        log_content = "".join(lines[-200:])
+    except FileNotFoundError:
+        log_content = "(Ingen logg hittades — ingen utskrift har testats ännu)"
+    except Exception as e:
+        log_content = f"(Fel vid läsning av logg: {e})"
+
+    return jsonify({
+        "python": sys.version,
+        "pil": pil_ver,
+        "brother_ql": bql_ver,
+        "os": platform.platform(),
+        "printers": printers,
+        "settings": settings,
+        "log": log_content,
+    })
+
+
+@app.route('/api/logs/clear', methods=['POST'])
+def clear_logs():
+    try:
+        open(_log_path, 'w', encoding='utf-8').close()
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

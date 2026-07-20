@@ -305,7 +305,6 @@
             <img id="appLogo" src="/static/logo-light.png" alt="SendSms">
             <nav class="main-nav-tabs">
                 <button class="main-nav-tab active" onclick="switchMainTab('sms')">SMS</button>
-                <button class="main-nav-tab" onclick="switchMainTab('priser')">Priser</button>
                 <button class="main-nav-tab" onclick="switchMainTab('etikett')">Etikett</button>
             </nav>
         </div>
@@ -646,6 +645,7 @@
                 <div class="tab" onclick="switchTab('tab-templates')">SMS Mallar</div>
                 <div class="tab" onclick="switchTab('tab-security')">Säkerhet</div>
                 <div class="tab" onclick="switchTab('tab-brother')">Brother Skrivare</div>
+                <div class="tab" onclick="switchTab('tab-diag')">🔍 Diagnostik</div>
             </div>
 
             <!-- Tab 1: Settings -->
@@ -696,7 +696,16 @@
                         <input type="text" id="editTemplateName" placeholder="Mallens namn">
                     </div>
                     <div class="form-group">
-                        <textarea id="editTemplateText" placeholder="Meddelandetext... (Använd {namn} för automatisk ifyllnad)"></textarea>
+                        <textarea id="editTemplateText" placeholder="Skriv meddelandetext här..."></textarea>
+                    </div>
+                    <div style="background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; padding:10px; margin-bottom:10px;">
+                        <p style="font-size:0.8rem; font-weight:600; margin-bottom:8px; color:var(--text-muted);">Tillgängliga variabler — klicka för att infoga:</p>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            <button type="button" class="btn-outline" style="padding:5px 10px; font-size:0.8rem; font-family:monospace;" onclick="insertPlaceholder('{namn}')" title="Ersätts med 'Kundens Namn'-fältet">{namn}</button>
+                        </div>
+                        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:8px; line-height:1.4;">
+                            Exempel: <em>"Hej {namn}! Din vara är klar."</em> → <em>"Hej Anna! Din vara är klar."</em>
+                        </p>
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button class="btn-primary" style="flex: 1; min-width: 150px;" onclick="saveTemplate()">Spara Mall</button>
@@ -770,6 +779,31 @@
                 </div>
             </div>
             
+            <!-- Tab 5: Diagnostik -->
+            <div id="tab-diag" class="tab-content">
+                <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom:14px;">
+                    Samlar information om skrivaren, bibliotek och de senaste 200 logградerna.
+                    Kopiera och skicka till support för felsökning.
+                </p>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+                    <button class="btn-primary" style="flex:1; min-width:140px;" onclick="fetchDiagnostics()">
+                        🔍 Hämta diagnostik
+                    </button>
+                    <button class="btn-outline" style="flex:1; min-width:140px;" onclick="copyDiagnostics()">
+                        📋 Kopiera till urklipp
+                    </button>
+                    <button class="btn-danger" style="flex:1; min-width:120px;" onclick="clearDiagLog()">
+                        🗑 Rensa logg
+                    </button>
+                </div>
+                <textarea id="diagOutput" readonly
+                    style="width:100%; height:340px; font-family:monospace; font-size:0.78rem;
+                           background:var(--input-bg); color:var(--text-main);
+                           border:1px solid var(--border-color); border-radius:8px;
+                           padding:10px; resize:vertical; white-space:pre;"
+                    placeholder="Tryck på 'Hämta diagnostik' för att se information..."></textarea>
+            </div>
+
             <button class="btn-outline" style="width: 100%; margin-top: 24px; border-color: var(--border-color); background: var(--input-bg);" onclick="closeSettingsModal()">Stäng inställningar</button>
         </div>
     </div>
@@ -1278,6 +1312,15 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
                 settingsDirty = true;
             }
         }
+        function insertPlaceholder(text) {
+            const ta = document.getElementById('editTemplateText');
+            const start = ta.selectionStart;
+            const end = ta.selectionEnd;
+            ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
+            ta.selectionStart = ta.selectionEnd = start + text.length;
+            ta.focus();
+        }
+
         function resetTemplateForm() {
             document.getElementById('editTemplateId').value = '';
             document.getElementById('editTemplateName').value = '';
@@ -1949,6 +1992,78 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
             } catch (e) {
                 showToast('Fel vid utskrift: ' + e.message, 'error');
             }
+        }
+
+        // --- Diagnostik ---
+        async function fetchDiagnostics() {
+            const out = document.getElementById('diagOutput');
+            out.value = 'Hämtar diagnostik...';
+            try {
+                const res = await fetch('/api/diagnostics', { cache: 'no-store' });
+                if (res.status === 401) return checkAuth();
+                const d = await res.json();
+
+                const printerConf = d.settings.brother_ip || '(ej inställt)';
+                const printerMatch = d.printers.includes(printerConf);
+
+                let text = '';
+                text += '=== SYSTEMINFORMATION ===\n';
+                text += `Python:      ${d.python}\n`;
+                text += `PIL/Pillow:  ${d.pil}\n`;
+                text += `brother_ql: ${d.brother_ql}\n`;
+                text += `OS:          ${d.os}\n\n`;
+
+                text += '=== SKRIVARINSTÄLLNINGAR ===\n';
+                text += `Aktiverad:   ${d.settings.brother_enabled === 'true' ? 'JA' : 'NEJ'}\n`;
+                text += `Modell:      ${d.settings.brother_model || '(ej inställt)'}\n`;
+                text += `Etikett:     ${d.settings.brother_label_size}\n`;
+                text += `Skrivare:    ${printerConf}\n\n`;
+
+                text += '=== WINDOWS SKRIVARE ===\n';
+                if (d.printers.length === 0) {
+                    text += '(Inga skrivare hittades)\n';
+                } else {
+                    d.printers.forEach(p => {
+                        const match = p === printerConf ? ' ← ANVÄNDS' : '';
+                        text += `  - ${p}${match}\n`;
+                    });
+                }
+                if (d.settings.brother_ip && !printerMatch && !d.settings.brother_ip.includes('.')) {
+                    text += `\n⚠️  VARNING: '${printerConf}' finns INTE i skrivarlistan ovan!\n`;
+                    text += '   Kontrollera att skrivarnamnet är exakt rätt.\n';
+                }
+                text += '\n';
+
+                text += '=== LOGG (senaste 200 rader) ===\n';
+                text += d.log || '(tom — ingen utskrift har testats ännu)';
+
+                out.value = text;
+            } catch (e) {
+                out.value = 'FEL vid hämtning av diagnostik: ' + e.message;
+            }
+        }
+
+        function copyDiagnostics() {
+            const out = document.getElementById('diagOutput');
+            if (!out.value || out.value.startsWith('Tryck')) {
+                showToast('Hämta diagnostik först', 'error');
+                return;
+            }
+            navigator.clipboard.writeText(out.value)
+                .then(() => showToast('Kopierat till urklipp!'))
+                .catch(() => {
+                    out.select();
+                    document.execCommand('copy');
+                    showToast('Kopierat!');
+                });
+        }
+
+        function clearDiagLog() {
+            showConfirmModal('Rensa logg', 'Vill du rensa hela utskriftsloggen?', 'Rensa', 'btn-danger', async () => {
+                await fetch('/api/logs/clear', { method: 'POST' });
+                document.getElementById('diagOutput').value = '(Loggen rensad)';
+                showToast('Logg rensad');
+            });
         }
 
         // --- Toasts ---
