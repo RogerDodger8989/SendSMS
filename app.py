@@ -238,12 +238,17 @@ def init_db():
         pass
     conn.execute('''
         CREATE TABLE IF NOT EXISTS license_credits (
-            license_key TEXT PRIMARY KEY,
-            credits     INTEGER NOT NULL DEFAULT 0,
-            created_at  DATETIME NOT NULL,
-            updated_at  DATETIME NOT NULL
+            license_key    TEXT PRIMARY KEY,
+            credits        INTEGER NOT NULL DEFAULT 0,
+            created_at     DATETIME NOT NULL,
+            updated_at     DATETIME NOT NULL,
+            provisioned_at DATETIME
         )
     ''')
+    try:
+        conn.execute("ALTER TABLE license_credits ADD COLUMN provisioned_at DATETIME")
+    except sqlite3.OperationalError:
+        pass
     conn.execute('''
         CREATE TABLE IF NOT EXISTS credit_transactions (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -605,6 +610,59 @@ def add_credits(license_key, amount, reason, note=""):
     conn.commit()
     conn.close()
     return credits_after
+
+
+def auto_provision_if_new_period(license_key):
+    """Automatically provisions credits when:
+      - The license key has never been seen before (first use), OR
+      - Credits are 0 AND at least BILLING_PERIOD_DAYS have passed since last provisioning.
+    The FOSSBilling license validation (called before this) already confirmed the license is active.
+    Returns the credits added (0 if no provisioning happened)."""
+    credits_per_license = int(os.environ.get("CREDITS_PER_LICENSE", "100"))
+    billing_period_days = int(os.environ.get("BILLING_PERIOD_DAYS", "30"))
+
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT credits, provisioned_at FROM license_credits WHERE license_key = ?",
+        (license_key,)
+    ).fetchone()
+    conn.close()
+
+    now = datetime.now()
+
+    if row is None:
+        # First time this key is used — provision immediately
+        add_credits(license_key, credits_per_license, "auto_provision", "first_use")
+        _update_provisioned_at(license_key, now)
+        return credits_per_license
+
+    if row["credits"] > 0:
+        return 0  # Still has credits — no action needed
+
+    # Credits exhausted — check if billing period has elapsed since last provisioning
+    if row["provisioned_at"]:
+        try:
+            last = datetime.strptime(row["provisioned_at"], '%Y-%m-%d %H:%M:%S')
+            if (now - last).days < billing_period_days:
+                return 0  # Still within the same billing period — no re-provision
+        except ValueError:
+            pass  # Malformed date — fall through and re-provision
+
+    # New billing period detected — provision again
+    add_credits(license_key, credits_per_license, "auto_provision", "renewal")
+    _update_provisioned_at(license_key, now)
+    return credits_per_license
+
+
+def _update_provisioned_at(license_key, now):
+    now_str = now.strftime('%Y-%m-%d %H:%M:%S')
+    conn = get_db_connection()
+    conn.execute(
+        "UPDATE license_credits SET provisioned_at = ? WHERE license_key = ?",
+        (now_str, license_key)
+    )
+    conn.commit()
+    conn.close()
 
 
 @app.before_request
@@ -1169,12 +1227,15 @@ def proxy_send_sms():
     if not valid:
         return jsonify({"error": f"Obehörig: {reason}"}), 401
 
-    # --- 2. Credit check (atomic deduction — released only if 46elks succeeds) ---
+    # --- 2. Auto-provision credits if this is a new key or a new billing period ---
+    auto_provision_if_new_period(license_key)
+
+    # --- 3. Atomic credit deduction ---
     credit_ok, remaining = deduct_credit(license_key)
     if not credit_ok:
         return jsonify({"error": "Inga krediter kvar", "credits_remaining": 0}), 402
 
-    # --- 3. Master credentials check ---
+    # --- 4. Master credentials check ---
     if not _PROXY_ELKS_USERNAME or not _PROXY_ELKS_PASSWORD:
         # Roll back the deducted credit — server misconfiguration, not client fault
         add_credits(license_key, 1, "rollback", "server misconfiguration")
@@ -1271,6 +1332,8 @@ def proxy_credits_balance():
     valid, reason = _validate_fossbilling_license(license_key)
     if not valid:
         return jsonify({"error": f"Obehörig: {reason}"}), 401
+    # Trigger auto-provisioning here too — so credits appear as soon as the app is opened
+    auto_provision_if_new_period(license_key)
     conn = get_db_connection()
     row = conn.execute(
         "SELECT credits FROM license_credits WHERE license_key = ?", (license_key,)
