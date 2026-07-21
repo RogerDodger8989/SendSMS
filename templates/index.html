@@ -667,8 +667,24 @@
                     <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Äldre SMS raderas automatiskt.</div>
                 </div>
 
+                <!-- Proxy / License section (primary mode) -->
+                <div style="background:var(--input-bg); border:1px solid var(--border-color); border-radius:10px; padding:14px; margin-bottom:18px; margin-top:8px;">
+                    <h3 style="font-size:1rem; margin-bottom:12px;">Licens &amp; Proxy</h3>
+                    <div class="form-group">
+                        <label>Proxy-URL <small style="color:var(--text-muted);">URL till centrala SMS-servern</small></label>
+                        <input type="url" id="proxyUrl" placeholder="https://sms.dinserver.se">
+                    </div>
+                    <div class="form-group">
+                        <label>Licensnyckel <small style="color:var(--text-muted);">Din FOSSBilling-nyckel</small></label>
+                        <input type="text" id="licenseKey" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" style="font-family:monospace; letter-spacing:0.05em;">
+                    </div>
+                    <p style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">
+                        När Proxy-URL och licensnyckel är ifyllda skickas alla SMS via den centrala servern. Egna 46elks-uppgifter nedan används <em>inte</em>.
+                    </p>
+                </div>
+
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 20px;">
-                    <h3 style="font-size: 1rem;">46elks API Uppgifter</h3>
+                    <h3 style="font-size: 1rem;">46elks Direktanslutning <small style="color:var(--text-muted); font-weight:400;">(utan proxy)</small></h3>
                     <a href="https://46elks.se/" target="_blank" rel="noopener" style="font-size: 0.85rem; color: var(--primary-color); text-decoration: none; font-weight: 500;">&#x1F517; Länk</a>
                 </div>
                 <div class="form-group">
@@ -1367,6 +1383,8 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
             const res = await fetch('/api/settings', { cache: 'no-store' });
             if(res.status === 401) return;
             const s = await res.json();
+            document.getElementById('proxyUrl').value = s.proxy_url || '';
+            document.getElementById('licenseKey').value = s.license_key || '';
             document.getElementById('elksUsername').value = s.elks_username || '';
             if (s.elks_password === '__masked__') {
                 document.getElementById('elksPassword').value = '••••••••';
@@ -1401,6 +1419,8 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    proxy_url: document.getElementById('proxyUrl').value.trim(),
+                    license_key: document.getElementById('licenseKey').value.trim(),
                     elks_username: document.getElementById('elksUsername').value,
                     elks_password: passwordIsUnchanged ? '__masked__' : document.getElementById('elksPassword').value,
                     elks_sender: senderVal,

@@ -266,6 +266,8 @@ def init_settings_db():
     cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('brother_model', 'QL-810W')")
     cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('brother_label_size', '17x54')")
     cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('brother_enabled', 'false')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('proxy_url', '')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('license_key', '')")
 
     conn.execute('''
         CREATE TABLE IF NOT EXISTS suppliers (
@@ -715,7 +717,9 @@ def handle_settings():
             "brother_ip": get_setting("brother_ip", ""),
             "brother_model": get_setting("brother_model", "QL-810W"),
             "brother_label_size": get_setting("brother_label_size", "17x54"),
-            "brother_enabled": get_setting("brother_enabled", "false")
+            "brother_enabled": get_setting("brother_enabled", "false"),
+            "proxy_url": get_setting("proxy_url", ""),
+            "license_key": get_setting("license_key", ""),
         }
         return jsonify(settings)
 
@@ -725,7 +729,10 @@ def handle_settings():
         if len(sender) > 11:
             return jsonify({"success": False, "error": "Avsändaren får max vara 11 tecken"}), 400
         conn = get_settings_connection()
-        for key in ['elks_username', 'elks_password', 'elks_sender', 'test_mode', 'purge_days', 'brother_ip', 'brother_model', 'brother_label_size', 'brother_enabled']:
+        saveable = ['elks_username', 'elks_password', 'elks_sender', 'test_mode', 'purge_days',
+                    'brother_ip', 'brother_model', 'brother_label_size', 'brother_enabled',
+                    'proxy_url', 'license_key']
+        for key in saveable:
             if key not in data:
                 continue
             if key == 'elks_password' and data[key] == _PASSWORD_MASK:
@@ -838,17 +845,10 @@ def send_sms():
 
     sanitized_number = sanitize_phone_number(phone_number)
 
-    elks_username = get_setting("elks_username")
-    elks_password = get_setting("elks_password")
-    elks_sender = get_setting("elks_sender", "Butiken")
-    test_mode = get_setting("test_mode", "false") == "true"
-
-    api_url = "https://api.46elks.com/a1/sms"
-    payload = {
-        "from": elks_sender,
-        "to": sanitized_number,
-        "message": message
-    }
+    elks_sender   = get_setting("elks_sender", "Butiken")
+    test_mode     = get_setting("test_mode", "false") == "true"
+    proxy_url     = get_setting("proxy_url", "").rstrip("/")
+    license_key   = get_setting("license_key", "")
 
     status = "Failed"
     api_id = ""
@@ -856,28 +856,54 @@ def send_sms():
 
     if test_mode:
         status = "Övningsläge (Ej skickat)"
-    elif elks_username and elks_password:
+    elif proxy_url and license_key:
+        # --- Proxy mode: forward through the centralized SMS proxy ---
         try:
             response = requests.post(
-                api_url,
-                data=payload,
-                auth=(elks_username, elks_password),
-                timeout=10
+                f"{proxy_url}/api/v1/send-sms",
+                json={"license_key": license_key, "to": sanitized_number,
+                      "message": message, "sender": elks_sender},
+                timeout=15,
             )
-
             if response.status_code == 200:
                 resp_data = response.json()
-                status = resp_data.get('status', 'Sent')
+                status = resp_data.get('status', 'created')
                 api_id = resp_data.get('id', '')
             else:
-                error_msg = f"API Fel {response.status_code}: {response.text}"
+                try:
+                    err_body = response.json()
+                    error_msg = err_body.get('error', f"HTTP {response.status_code}")
+                except Exception:
+                    error_msg = f"Proxy HTTP {response.status_code}: {response.text[:200]}"
                 status = f"Failed: {error_msg}"
         except Exception as e:
-            error_msg = f"Request Exception: {str(e)}"
+            error_msg = f"Kunde inte nå proxyn: {e}"
             status = f"Failed: {error_msg}"
     else:
-        error_msg = "Saknar inloggningsuppgifter. Fyll i API-nycklar i inställningarna."
-        status = f"Failed: {error_msg}"
+        # --- Direct mode: call 46elks with locally stored credentials ---
+        elks_username = get_setting("elks_username")
+        elks_password = get_setting("elks_password")
+        if elks_username and elks_password:
+            try:
+                response = requests.post(
+                    "https://api.46elks.com/a1/sms",
+                    data={"from": elks_sender, "to": sanitized_number, "message": message},
+                    auth=(elks_username, elks_password),
+                    timeout=10,
+                )
+                if response.status_code == 200:
+                    resp_data = response.json()
+                    status = resp_data.get('status', 'Sent')
+                    api_id = resp_data.get('id', '')
+                else:
+                    error_msg = f"API Fel {response.status_code}: {response.text}"
+                    status = f"Failed: {error_msg}"
+            except Exception as e:
+                error_msg = f"Request Exception: {str(e)}"
+                status = f"Failed: {error_msg}"
+        else:
+            error_msg = "Varken proxy-URL/licensnyckel eller 46elks-uppgifter är konfigurerade."
+            status = f"Failed: {error_msg}"
 
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     conn = get_db_connection()
