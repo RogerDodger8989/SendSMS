@@ -896,20 +896,42 @@ def delete_customer(id):
 
 @app.route('/api/balance', methods=['GET'])
 def get_balance():
+    proxy_url   = get_setting("proxy_url", "").rstrip("/")
+    license_key = get_setting("license_key", "")
+
+    if proxy_url and license_key:
+        # Proxy mode — fetch the customer's own credit balance from the central server
+        try:
+            resp = requests.get(
+                f"{proxy_url}/api/v1/credits/balance",
+                params={"license_key": license_key},
+                timeout=8,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return jsonify({"success": True, "mode": "proxy",
+                                "credits": data.get("credits_remaining", 0)})
+            try:
+                err = resp.json().get("error", f"HTTP {resp.status_code}")
+            except Exception:
+                err = f"HTTP {resp.status_code}"
+            return jsonify({"success": False, "error": err})
+        except Exception as e:
+            return jsonify({"success": False, "error": f"Kunde inte nå proxyn: {e}"})
+
+    # Direct mode — fetch the 46elks account balance
     elks_username = get_setting("elks_username")
     elks_password = get_setting("elks_password")
-
     if not elks_username or not elks_password:
         return jsonify({"success": False, "error": "Saknar inloggning"})
-
     try:
-        resp = requests.get("https://api.46elks.com/a1/Me", auth=(elks_username, elks_password), timeout=5)
+        resp = requests.get("https://api.46elks.com/a1/Me",
+                            auth=(elks_username, elks_password), timeout=5)
         if resp.status_code == 200:
             data = resp.json()
-            balance_raw = data.get('balance', 0)
-            currency = data.get('currency', 'SEK')
-            balance = balance_raw / 10000.0
-            return jsonify({"success": True, "balance": balance, "currency": currency})
+            balance = data.get('balance', 0) / 10000.0
+            return jsonify({"success": True, "mode": "direct",
+                            "balance": balance, "currency": data.get('currency', 'SEK')})
         return jsonify({"success": False, "error": "Kunde inte hämta saldo"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})

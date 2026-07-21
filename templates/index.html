@@ -311,8 +311,8 @@
         <div style="display: flex; flex-direction: column; align-items: flex-end;">
             <span id="serverIpDisplay" style="font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.02em;"></span>
             <div class="header-actions" style="align-items: center;">
-                <div id="balanceDisplay" style="display: flex; align-items: center; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); margin-right: 10px;" title="Ditt saldo hos 46elks">
-                    Saldo: Laddar...
+                <div id="balanceDisplay" style="display: flex; align-items: center; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); margin-right: 10px;" title="Ditt kreditsaldo / kontosaldo">
+                    Laddar...
                 </div>
                 <button class="btn-icon" id="darkModeToggle" title="Växla ljust/mörkt läge">
                     <svg id="themeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.5s ease;">
@@ -1028,17 +1028,25 @@ Programvaran tillhandahålls i befintligt skick ("as is"), utan några garantier
         }
         
         async function fetchBalance() {
+            const balEl = document.getElementById('balanceDisplay');
             try {
                 const res = await fetch('/api/balance', { cache: 'no-store' });
                 const data = await res.json();
-                const balEl = document.getElementById('balanceDisplay');
-                if(data.success) {
-                    balEl.innerHTML = `Saldo: <strong style="color: var(--text-main); margin-left: 4px;">${data.balance.toFixed(2)} kr</strong>`;
+                if (data.success) {
+                    if (data.mode === 'proxy') {
+                        const c = data.credits;
+                        const color = c === 0 ? 'var(--error-color)' : c <= 10 ? '#f59e0b' : 'var(--text-main)';
+                        balEl.title = 'Dina kvarvarande SMS-krediter';
+                        balEl.innerHTML = `Krediter: <strong style="color:${color}; margin-left:4px;">${c} st</strong>`;
+                    } else {
+                        balEl.title = 'Ditt saldo hos 46elks';
+                        balEl.innerHTML = `Saldo: <strong style="color:var(--text-main); margin-left:4px;">${data.balance.toFixed(2)} kr</strong>`;
+                    }
                 } else {
-                    balEl.innerHTML = `<span style="color: var(--error-color);" title="${data.error}">Saldo okänt</span>`;
+                    balEl.innerHTML = `<span style="color:var(--error-color);" title="${data.error || ''}">Saldo okänt</span>`;
                 }
             } catch(e) {
-                document.getElementById('balanceDisplay').textContent = "Kunde ej hämta saldo";
+                balEl.textContent = 'Kunde ej hämta saldo';
             }
         }
         
