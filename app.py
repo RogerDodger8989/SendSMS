@@ -236,6 +236,24 @@ def init_db():
         conn.execute("ALTER TABLE sms_log ADD COLUMN label_info TEXT")
     except sqlite3.OperationalError:
         pass
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS license_credits (
+            license_key TEXT PRIMARY KEY,
+            credits     INTEGER NOT NULL DEFAULT 0,
+            created_at  DATETIME NOT NULL,
+            updated_at  DATETIME NOT NULL
+        )
+    ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS credit_transactions (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            license_key TEXT    NOT NULL,
+            change      INTEGER NOT NULL,
+            reason      TEXT,
+            note        TEXT,
+            timestamp   DATETIME NOT NULL
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -525,10 +543,78 @@ def get_setting(key, default=""):
     return row['value'] if row else default
 
 
+def deduct_credit(license_key):
+    """Atomically deducts 1 credit from the license. Returns (success, remaining).
+    BEGIN IMMEDIATE holds a write-lock for the duration, preventing double-spend."""
+    conn = get_db_connection()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT credits FROM license_credits WHERE license_key = ?", (license_key,)
+        ).fetchone()
+        if not row or row["credits"] <= 0:
+            conn.rollback()
+            return False, (row["credits"] if row else 0)
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        conn.execute(
+            "UPDATE license_credits SET credits = credits - 1, updated_at = ? "
+            "WHERE license_key = ? AND credits > 0",
+            (now, license_key)
+        )
+        if conn.execute("SELECT changes()").fetchone()[0] == 0:
+            conn.rollback()
+            return False, 0
+        remaining = conn.execute(
+            "SELECT credits FROM license_credits WHERE license_key = ?", (license_key,)
+        ).fetchone()["credits"]
+        conn.execute(
+            "INSERT INTO credit_transactions (license_key, change, reason, note, timestamp) "
+            "VALUES (?, -1, 'sms_sent', NULL, ?)",
+            (license_key, now)
+        )
+        conn.commit()
+        return True, remaining
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def add_credits(license_key, amount, reason, note=""):
+    """Adds credits to a license key, creating the row if needed. Returns credits_after."""
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    conn = get_db_connection()
+    conn.execute(
+        "INSERT OR IGNORE INTO license_credits (license_key, credits, created_at, updated_at) "
+        "VALUES (?, 0, ?, ?)",
+        (license_key, now, now)
+    )
+    conn.execute(
+        "UPDATE license_credits SET credits = credits + ?, updated_at = ? WHERE license_key = ?",
+        (amount, now, license_key)
+    )
+    credits_after = conn.execute(
+        "SELECT credits FROM license_credits WHERE license_key = ?", (license_key,)
+    ).fetchone()["credits"]
+    conn.execute(
+        "INSERT INTO credit_transactions (license_key, change, reason, note, timestamp) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (license_key, amount, reason, note or None, now)
+    )
+    conn.commit()
+    conn.close()
+    return credits_after
+
+
 @app.before_request
 def require_login():
-    # proxy_send_sms has its own license-key authentication
-    if request.endpoint in ['index', 'auth_status', 'login', 'static', 'proxy_send_sms']:
+    # These endpoints carry their own authentication (license key, admin key, webhook secret)
+    _public = {'index', 'auth_status', 'login', 'static',
+               'proxy_send_sms', 'proxy_credits_balance',
+               'admin_credits_add', 'admin_credits_balance',
+               'webhook_fossbilling'}
+    if request.endpoint in _public:
         return
     app_pin = get_setting("app_pin", "")
     if app_pin and not session.get("logged_in"):
@@ -1056,13 +1142,20 @@ def proxy_send_sms():
     if not to_number or not message:
         return jsonify({"error": "Fälten 'to' och 'message' är obligatoriska"}), 400
 
-    # --- License validation ---
+    # --- 1. License validation ---
     valid, reason = _validate_fossbilling_license(license_key)
     if not valid:
         return jsonify({"error": f"Obehörig: {reason}"}), 401
 
-    # --- Master credentials check ---
+    # --- 2. Credit check (atomic deduction — released only if 46elks succeeds) ---
+    credit_ok, remaining = deduct_credit(license_key)
+    if not credit_ok:
+        return jsonify({"error": "Inga krediter kvar", "credits_remaining": 0}), 402
+
+    # --- 3. Master credentials check ---
     if not _PROXY_ELKS_USERNAME or not _PROXY_ELKS_PASSWORD:
+        # Roll back the deducted credit — server misconfiguration, not client fault
+        add_credits(license_key, 1, "rollback", "server misconfiguration")
         return jsonify({"error": "SMS-tjänsten är inte konfigurerad (saknar 46elks-uppgifter)"}), 503
 
     sanitized = sanitize_phone_number(to_number)
@@ -1074,8 +1167,10 @@ def proxy_send_sms():
             timeout=15,
         )
     except requests.Timeout:
+        add_credits(license_key, 1, "rollback", "46elks timeout")
         return jsonify({"error": "Timeout vid anrop till 46elks"}), 504
     except Exception as e:
+        add_credits(license_key, 1, "rollback", f"46elks exception: {e}")
         return jsonify({"error": f"SMS-sändning misslyckades: {e}"}), 502
 
     try:
@@ -1084,7 +1179,7 @@ def proxy_send_sms():
         elks_data = {"raw": resp.text}
 
     if resp.status_code == 200:
-        # Log successful proxy send
+        # --- 4. Log successful send ---
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         try:
             conn = get_db_connection()
@@ -1096,9 +1191,88 @@ def proxy_send_sms():
             conn.close()
         except Exception:
             pass
-        return jsonify(elks_data), 200
+        return jsonify({**elks_data, "credits_remaining": remaining}), 200
 
+    # 46elks returned an error — refund the credit
+    add_credits(license_key, 1, "rollback", f"46elks HTTP {resp.status_code}")
     return jsonify({"error": f"46elks returnerade HTTP {resp.status_code}", "details": elks_data}), resp.status_code
+
+
+@app.route('/api/admin/credits/add', methods=['POST'])
+def admin_credits_add():
+    admin_key = os.environ.get("ADMIN_KEY", "")
+    if not admin_key or request.headers.get("X-Admin-Key") != admin_key:
+        return jsonify({"error": "Ogiltig admin-nyckel"}), 401
+    data = request.get_json(silent=True) or {}
+    license_key = (data.get("license_key") or "").strip()
+    try:
+        amount = int(data.get("credits", 0))
+    except (TypeError, ValueError):
+        amount = 0
+    note = (data.get("note") or "").strip()
+    if not license_key or amount <= 0:
+        return jsonify({"error": "license_key och credits (>0) krävs"}), 400
+    credits_after = add_credits(license_key, amount, "admin_add", note)
+    return jsonify({"success": True, "license_key": license_key, "credits_after": credits_after})
+
+
+@app.route('/api/admin/credits/balance', methods=['GET'])
+def admin_credits_balance():
+    admin_key = os.environ.get("ADMIN_KEY", "")
+    if not admin_key or request.headers.get("X-Admin-Key") != admin_key:
+        return jsonify({"error": "Ogiltig admin-nyckel"}), 401
+    license_key = (request.args.get("license_key") or "").strip()
+    if not license_key:
+        return jsonify({"error": "license_key krävs som query-parameter"}), 400
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT credits FROM license_credits WHERE license_key = ?", (license_key,)
+    ).fetchone()
+    txs = conn.execute(
+        "SELECT change, reason, note, timestamp FROM credit_transactions "
+        "WHERE license_key = ? ORDER BY id DESC LIMIT 20",
+        (license_key,)
+    ).fetchall()
+    conn.close()
+    return jsonify({
+        "license_key": license_key,
+        "credits": row["credits"] if row else 0,
+        "transactions": [dict(t) for t in txs],
+    })
+
+
+@app.route('/api/v1/credits/balance', methods=['GET'])
+def proxy_credits_balance():
+    license_key = (request.args.get("license_key") or "").strip()
+    if not license_key:
+        return jsonify({"error": "license_key krävs som query-parameter"}), 400
+    valid, reason = _validate_fossbilling_license(license_key)
+    if not valid:
+        return jsonify({"error": f"Obehörig: {reason}"}), 401
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT credits FROM license_credits WHERE license_key = ?", (license_key,)
+    ).fetchone()
+    conn.close()
+    return jsonify({"credits_remaining": row["credits"] if row else 0})
+
+
+@app.route('/api/webhook/fossbilling', methods=['POST'])
+def webhook_fossbilling():
+    webhook_secret = os.environ.get("WEBHOOK_SECRET", "")
+    if not webhook_secret or request.headers.get("X-Webhook-Secret") != webhook_secret:
+        return jsonify({"error": "Ogiltig webhook-hemlighet"}), 401
+    data = request.get_json(silent=True) or {}
+    license_key = (data.get("license") or "").strip()
+    try:
+        amount = int(data.get("credits", 0))
+    except (TypeError, ValueError):
+        amount = 0
+    note = (data.get("note") or "").strip()
+    if not license_key or amount <= 0:
+        return jsonify({"error": "Fälten 'license' och 'credits' (>0) krävs"}), 400
+    credits_after = add_credits(license_key, amount, "webhook_add", note)
+    return jsonify({"success": True, "license_key": license_key, "credits_after": credits_after})
 
 
 @app.route('/api/diagnostics', methods=['GET'])
